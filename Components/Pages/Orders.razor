@@ -2,9 +2,10 @@
 @using OrderTracker.Services
 @using OrderTracker.Models
 @inject OrderService OrderSvc
+@inject CarrierService CarrierSvc
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
-<PageTitle>Pedidos — OrderTracker</PageTitle>
+<PageTitle>📦 Order Tracker — Pedidos</PageTitle>
 
 <div class="page-header">
     <div>
@@ -16,7 +17,7 @@
 
 <div class="filters-bar">
     <div class="search-wrap">
-        <input class="search-input" type="text" placeholder="Buscar por tienda o código..." 
+        <input class="search-input" type="text" placeholder="Buscar por tienda o código..."
                @bind="searchText" @bind:event="oninput" @bind:after="FilterOrders" />
     </div>
     <div class="filter-wrap">
@@ -30,10 +31,10 @@
     </div>
     <div class="sort-wrap">
         <select class="filter-select" @bind="sortField" @bind:after="FilterOrders">
-            <option value="date-desc">Fecha ↓</option>
-            <option value="date-asc">Fecha ↑</option>
-            <option value="price-desc">Precio ↓</option>
-            <option value="price-asc">Precio ↑</option>
+            <option value="date-desc">Fecha: más reciente</option>
+            <option value="date-asc">Fecha: más antigua</option>
+            <option value="price-desc">Precio: mayor primero</option>
+            <option value="price-asc">Precio: menor primero</option>
         </select>
     </div>
 </div>
@@ -83,7 +84,7 @@ else
                         </td>
                         <td class="date-cell">@order.PurchaseDate.ToString("dd/MM/yyyy")</td>
                         <td>
-                            <span class="company-badge">@GetCompanyLabel(order.ShippingCompany)</span>
+                            <span class="company-badge">@(order.Carrier?.Name ?? "—")</span>
                         </td>
                         <td class="tracking-cell">
                             @if (!string.IsNullOrEmpty(order.TrackingUrl))
@@ -102,14 +103,26 @@ else
                             }
                         </td>
                         <td>
-                            <select class="status-select status-@order.Status.ToString().ToLower()" 
-                                    value="@order.Status"
-                                    @onchange="e => ChangeStatus(order.Id, e)">
-                                @foreach (var s in Enum.GetValues<OrderStatus>())
+                            <div class="custom-dropdown @(openDropdownId == order.Id ? "open" : "")">
+                                <button class="status-badge status-@order.Status.ToString().ToLower() dropdown-trigger"
+                                        @onclick="() => ToggleDropdown(order.Id)"
+                                        @onclick:stopPropagation="true">
+                                    @GetStatusLabel(order.Status) ▾
+                                </button>
+                                @if (openDropdownId == order.Id)
                                 {
-                                    <option value="@s" selected="@(s == order.Status)">@GetStatusLabel(s)</option>
+                                    <div class="dropdown-menu" @onclick:stopPropagation="true">
+                                        @foreach (var s in Enum.GetValues<OrderStatus>())
+                                        {
+                                            <div class="dropdown-item @(s == order.Status ? "active" : "")"
+                                                 @onclick="() => ChangeStatusFromDropdown(order.Id, s)">
+                                                <span class="status-dot status-dot-@s.ToString().ToLower()"></span>
+                                                @GetStatusLabel(s)
+                                            </div>
+                                        }
+                                    </div>
                                 }
-                            </select>
+                            </div>
                         </td>
                         <td class="@(IsDelayed(order) ? "delayed-date" : "")">
                             @if (order.EstimatedDelivery.HasValue)
@@ -174,16 +187,17 @@ else
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Transportista</label>
-                                <select class="form-select" @bind="editingOrder.ShippingCompany">
-                                    @foreach (var c in Enum.GetValues<ShippingCompany>())
+                                <select class="form-select" @bind="editingOrder.CarrierId">
+                                    <option value="">— Sin transportista —</option>
+                                    @foreach (var c in carriers)
                                     {
-                                        <option value="@c">@GetCompanyLabel(c)</option>
+                                        <option value="@c.Id">@c.Name</option>
                                     }
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Código de envío</label>
-                                <input class="form-input" @bind="editingOrder.TrackingCode" placeholder="Auto-detecta transportista" />
+                                <input class="form-input" @bind="editingOrder.TrackingCode" placeholder="Número de seguimiento" />
                             </div>
                             <div class="form-group form-full">
                                 <label class="form-label">URL de seguimiento (opcional)</label>
@@ -277,6 +291,7 @@ else
 @code {
     private List<Order> allOrders = new();
     private List<Order> filteredOrders = new();
+    private List<Carrier> carriers = new();
     private bool loading = true;
     private string searchText = "";
     private string selectedStatus = "";
@@ -289,6 +304,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        carriers = await CarrierSvc.GetAllAsync();
         await LoadOrders();
     }
 
@@ -339,7 +355,7 @@ else
             Id = order.Id,
             Store = order.Store,
             PurchaseDate = order.PurchaseDate,
-            ShippingCompany = order.ShippingCompany,
+            CarrierId = order.CarrierId,
             TrackingCode = order.TrackingCode,
             TrackingUrl = order.TrackingUrl,
             Status = order.Status,
@@ -406,6 +422,22 @@ else
         await LoadOrders();
     }
 
+    private int? openDropdownId = null;
+
+    private void ToggleDropdown(int orderId)
+    {
+        openDropdownId = openDropdownId == orderId ? null : orderId;
+    }
+
+    private async Task ChangeStatusFromDropdown(int orderId, OrderStatus status)
+    {
+        openDropdownId = null;
+        await OrderSvc.UpdateStatusAsync(orderId, status);
+        var order = allOrders.FirstOrDefault(o => o.Id == orderId);
+        if (order != null) order.Status = status;
+        FilterOrders();
+    }
+
     private async Task ChangeStatus(int orderId, ChangeEventArgs e)
     {
         if (Enum.TryParse<OrderStatus>(e.Value?.ToString(), out var status))
@@ -437,20 +469,11 @@ else
     private string GetStatusLabel(OrderStatus status) => status switch
     {
         OrderStatus.Comprado => "Comprado",
-        OrderStatus.PreparandoEnvio => "Preparando envío",
         OrderStatus.Enviado => "Enviado",
         OrderStatus.EnReparto => "En reparto",
         OrderStatus.Incidencia => "Incidencia",
         OrderStatus.Recibido => "Recibido",
         OrderStatus.Cancelado => "Cancelado",
         _ => status.ToString()
-    };
-
-    private string GetCompanyLabel(ShippingCompany c) => c switch
-    {
-        ShippingCompany.Desconocido => "—",
-        ShippingCompany.CorreosExpress => "Correos Express",
-        ShippingCompany.AmazonLogistics => "Amazon Logistics",
-        _ => c.ToString()
     };
 }
