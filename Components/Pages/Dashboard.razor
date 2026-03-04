@@ -1,0 +1,122 @@
+@page "/"
+@using OrderTracker.Services
+@using OrderTracker.DTOs
+@using OrderTracker.Models
+@inject OrderService OrderSvc
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Dashboard — OrderTracker</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Resumen de tus pedidos online</p>
+    </div>
+    <a href="/orders" class="btn btn-primary">Ver todos los pedidos →</a>
+</div>
+
+@if (metrics == null)
+{
+    <div class="loading-state">Cargando métricas...</div>
+}
+else
+{
+    <div class="metrics-grid">
+        <div class="metric-card metric-pending">
+            <div class="metric-icon">🕐</div>
+            <div class="metric-info">
+                <span class="metric-value">@metrics.TotalPending</span>
+                <span class="metric-label">Pendientes</span>
+            </div>
+        </div>
+        <div class="metric-card metric-delivery">
+            <div class="metric-icon">🚚</div>
+            <div class="metric-info">
+                <span class="metric-value">@metrics.InDelivery</span>
+                <span class="metric-label">En reparto</span>
+            </div>
+        </div>
+        <div class="metric-card metric-delayed">
+            <div class="metric-icon">⚠</div>
+            <div class="metric-info">
+                <span class="metric-value">@metrics.Delayed</span>
+                <span class="metric-label">Retrasados</span>
+            </div>
+        </div>
+        <div class="metric-card metric-spent">
+            <div class="metric-icon">€</div>
+            <div class="metric-info">
+                <span class="metric-value">@metrics.TotalSpent.ToString("N2")€</span>
+                <span class="metric-label">Total gastado</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-sections">
+        <div class="section-card">
+            <h2 class="section-title">Últimos pedidos</h2>
+            @if (recentOrders.Any())
+            {
+                <div class="orders-preview">
+                    @foreach (var order in recentOrders)
+                    {
+                        <div class="order-preview-row">
+                            <div class="order-preview-store">@order.Store</div>
+                            <div class="order-preview-date">@order.PurchaseDate.ToString("dd/MM/yyyy")</div>
+                            <span class="status-badge status-@order.Status.ToString().ToLower()">@GetStatusLabel(order.Status)</span>
+                            <div class="order-preview-price">@order.TotalPrice.ToString("N2")€</div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state-small">No hay pedidos aún. <a href="/orders">Crear el primero →</a></div>
+            }
+        </div>
+
+        <div class="section-card">
+            <h2 class="section-title">Por estado</h2>
+            <div class="status-breakdown">
+                @foreach (var statusGroup in statusBreakdown)
+                {
+                    <div class="status-breakdown-row">
+                        <span class="status-badge status-@statusGroup.Key.ToString().ToLower()">@GetStatusLabel(statusGroup.Key)</span>
+                        <div class="status-bar-wrap">
+                            <div class="status-bar" style="width: @(metrics.TotalOrders > 0 ? (statusGroup.Value * 100 / metrics.TotalOrders) : 0)%"></div>
+                        </div>
+                        <span class="status-count">@statusGroup.Value</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private DashboardMetrics? metrics;
+    private List<Order> recentOrders = new();
+    private Dictionary<OrderStatus, int> statusBreakdown = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        metrics = await OrderSvc.GetMetricsAsync();
+        var all = await OrderSvc.GetAllAsync();
+        recentOrders = all.Take(5).ToList();
+        statusBreakdown = all
+            .GroupBy(o => o.Status)
+            .ToDictionary(g => g.Key, g => g.Count());
+    }
+
+    private string GetStatusLabel(OrderStatus status) => status switch
+    {
+        OrderStatus.Comprado => "Comprado",
+        OrderStatus.PreparandoEnvio => "Preparando",
+        OrderStatus.Enviado => "Enviado",
+        OrderStatus.EnReparto => "En reparto",
+        OrderStatus.Incidencia => "Incidencia",
+        OrderStatus.Recibido => "Recibido",
+        OrderStatus.Cancelado => "Cancelado",
+        _ => status.ToString()
+    };
+}

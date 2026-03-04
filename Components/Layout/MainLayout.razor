@@ -1,0 +1,41 @@
+@inherits LayoutComponentBase
+
+<div class="app-shell">
+    <nav class="sidebar">
+        <div class="sidebar-brand">
+            <span class="brand-icon">📦</span>
+            <span class="brand-text">OrderTracker</span>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="/" class="nav-link"><span class="nav-icon">◈</span> Dashboard</a></li>
+            <li><a href="/orders" class="nav-link"><span class="nav-icon">≡</span> Pedidos</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
+                <span id="theme-icon">☀</span>
+            </button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="content-wrapper">
+            @Body
+        </div>
+    </main>
+</div>
+
+<script>
+    function toggleTheme() {
+        const html = document.documentElement;
+        const current = html.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        document.getElementById('theme-icon').textContent = next === 'dark' ? '☀' : '◑';
+        localStorage.setItem('theme', next);
+    }
+    // Restore theme
+    const saved = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+    const icon = document.getElementById('theme-icon');
+    if (icon) icon.textContent = saved === 'dark' ? '☀' : '◑';
+</script>

@@ -1,0 +1,13 @@
+@using Microsoft.AspNetCore.Components.Routing
+
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(OrderTracker.Components.Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(OrderTracker.Components.Layout.MainLayout)">
+            <p role="alert">Lo sentimos, esta página no existe.</p>
+        </LayoutView>
+    </NotFound>
+</Router>

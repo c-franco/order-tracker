@@ -1,0 +1,456 @@
+@page "/orders"
+@using OrderTracker.Services
+@using OrderTracker.Models
+@inject OrderService OrderSvc
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Pedidos — OrderTracker</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Pedidos</h1>
+        <p class="page-subtitle">Gestión de todos tus pedidos online</p>
+    </div>
+    <button class="btn btn-primary" @onclick="OpenCreateModal">+ Nuevo pedido</button>
+</div>
+
+<div class="filters-bar">
+    <div class="search-wrap">
+        <input class="search-input" type="text" placeholder="Buscar por tienda o código..." 
+               @bind="searchText" @bind:event="oninput" @bind:after="FilterOrders" />
+    </div>
+    <div class="filter-wrap">
+        <select class="filter-select" @bind="selectedStatus" @bind:after="FilterOrders">
+            <option value="">Todos los estados</option>
+            @foreach (var s in Enum.GetValues<OrderStatus>())
+            {
+                <option value="@s">@GetStatusLabel(s)</option>
+            }
+        </select>
+    </div>
+    <div class="sort-wrap">
+        <select class="filter-select" @bind="sortField" @bind:after="FilterOrders">
+            <option value="date-desc">Fecha ↓</option>
+            <option value="date-asc">Fecha ↑</option>
+            <option value="price-desc">Precio ↓</option>
+            <option value="price-asc">Precio ↑</option>
+        </select>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="loading-state">Cargando pedidos...</div>
+}
+else if (!filteredOrders.Any())
+{
+    <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <h3>No hay pedidos</h3>
+        <p>@(string.IsNullOrEmpty(searchText) && string.IsNullOrEmpty(selectedStatus) ? "Crea tu primer pedido para empezar a hacer seguimiento." : "No se encontraron pedidos con los filtros actuales.")</p>
+        @if (string.IsNullOrEmpty(searchText) && string.IsNullOrEmpty(selectedStatus))
+        {
+            <button class="btn btn-primary" @onclick="OpenCreateModal">+ Crear pedido</button>
+        }
+    </div>
+}
+else
+{
+    <div class="table-container">
+        <table class="orders-table">
+            <thead>
+                <tr>
+                    <th>Tienda</th>
+                    <th>Fecha</th>
+                    <th>Transportista</th>
+                    <th>Código / Tracking</th>
+                    <th>Estado</th>
+                    <th>Entrega estimada</th>
+                    <th>Total</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in filteredOrders)
+                {
+                    <tr class="order-row">
+                        <td>
+                            <span class="store-name">@order.Store</span>
+                            @if (!string.IsNullOrEmpty(order.Notes))
+                            {
+                                <span class="order-notes" title="@order.Notes">💬</span>
+                            }
+                        </td>
+                        <td class="date-cell">@order.PurchaseDate.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            <span class="company-badge">@GetCompanyLabel(order.ShippingCompany)</span>
+                        </td>
+                        <td class="tracking-cell">
+                            @if (!string.IsNullOrEmpty(order.TrackingUrl))
+                            {
+                                <a href="@order.TrackingUrl" target="_blank" class="tracking-link" title="Abrir seguimiento">
+                                    @(order.TrackingCode ?? "Ver seguimiento") ↗
+                                </a>
+                            }
+                            else if (!string.IsNullOrEmpty(order.TrackingCode))
+                            {
+                                <span class="tracking-code">@order.TrackingCode</span>
+                            }
+                            else
+                            {
+                                <span class="no-tracking">—</span>
+                            }
+                        </td>
+                        <td>
+                            <select class="status-select status-@order.Status.ToString().ToLower()" 
+                                    value="@order.Status"
+                                    @onchange="e => ChangeStatus(order.Id, e)">
+                                @foreach (var s in Enum.GetValues<OrderStatus>())
+                                {
+                                    <option value="@s" selected="@(s == order.Status)">@GetStatusLabel(s)</option>
+                                }
+                            </select>
+                        </td>
+                        <td class="@(IsDelayed(order) ? "delayed-date" : "")">
+                            @if (order.EstimatedDelivery.HasValue)
+                            {
+                                @order.EstimatedDelivery.Value.ToString("dd/MM/yyyy")
+                                @if (IsDelayed(order)) { <span class="delay-badge">retrasado</span> }
+                            }
+                            else { <span class="no-data">—</span> }
+                        </td>
+                        <td class="price-cell">@order.TotalPrice.ToString("N2")€</td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="btn-icon btn-edit" @onclick="() => OpenEditModal(order)" title="Editar">✏</button>
+                                <button class="btn-icon btn-delete" @onclick="() => ConfirmDelete(order)" title="Eliminar">✕</button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="table-footer">
+        <span>@filteredOrders.Count pedido@(filteredOrders.Count != 1 ? "s" : "") · Total: <strong>@filteredOrders.Sum(o => o.TotalPrice).ToString("N2")€</strong></span>
+    </div>
+}
+
+<!-- Order Modal -->
+@if (showModal)
+{
+    <div class="modal-overlay" @onclick="CloseModal">
+        <div class="modal-panel" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2 class="modal-title">@(editingOrder?.Id > 0 ? "Editar pedido" : "Nuevo pedido")</h2>
+                <button class="modal-close" @onclick="CloseModal">✕</button>
+            </div>
+            <div class="modal-body">
+                @if (editingOrder != null)
+                {
+                    <div class="form-section">
+                        <h3 class="form-section-title">Información del pedido</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Tienda *</label>
+                                <input class="form-input" @bind="editingOrder.Store" placeholder="Amazon, Zara, AliExpress..." />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Fecha de compra *</label>
+                                <input class="form-input" type="date" @bind="editingOrder.PurchaseDate" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Estado</label>
+                                <select class="form-select" @bind="editingOrder.Status">
+                                    @foreach (var s in Enum.GetValues<OrderStatus>())
+                                    {
+                                        <option value="@s">@GetStatusLabel(s)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Fecha estimada de llegada</label>
+                                <input class="form-input" type="date" @bind="editingOrder.EstimatedDelivery" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Transportista</label>
+                                <select class="form-select" @bind="editingOrder.ShippingCompany">
+                                    @foreach (var c in Enum.GetValues<ShippingCompany>())
+                                    {
+                                        <option value="@c">@GetCompanyLabel(c)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Código de envío</label>
+                                <input class="form-input" @bind="editingOrder.TrackingCode" placeholder="Auto-detecta transportista" />
+                            </div>
+                            <div class="form-group form-full">
+                                <label class="form-label">URL de seguimiento (opcional)</label>
+                                <input class="form-input" @bind="editingOrder.TrackingUrl" placeholder="Se genera automáticamente si está vacío" />
+                            </div>
+                            <div class="form-group form-full">
+                                <label class="form-label">Notas</label>
+                                <textarea class="form-input form-textarea" @bind="editingOrder.Notes" placeholder="Notas adicionales..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="section-header-row">
+                            <h3 class="form-section-title">Productos</h3>
+                            <button class="btn btn-secondary btn-sm" @onclick="AddItem">+ Añadir producto</button>
+                        </div>
+
+                        @if (editingOrder.Items.Any())
+                        {
+                            <div class="items-table">
+                                <div class="items-header">
+                                    <span>Producto</span>
+                                    <span>Cantidad</span>
+                                    <span>Precio unitario</span>
+                                    <span>Subtotal</span>
+                                    <span></span>
+                                </div>
+                                @foreach (var item in editingOrder.Items.ToList())
+                                {
+                                    <div class="items-row">
+                                        <input class="form-input" @bind="item.ProductName" placeholder="Nombre del producto" />
+                                        <input class="form-input form-input-sm" type="number" min="1" @bind="item.Quantity" @bind:after="RecalcTotal" />
+                                        <input class="form-input form-input-sm" type="number" min="0" step="0.01" @bind="item.UnitPrice" @bind:after="RecalcTotal" />
+                                        <span class="item-subtotal">@((item.Quantity * item.UnitPrice).ToString("N2"))€</span>
+                                        <button class="btn-icon btn-delete btn-sm" @onclick="() => RemoveItem(item)">✕</button>
+                                    </div>
+                                }
+                                <div class="items-total">
+                                    <span>TOTAL</span>
+                                    <span></span>
+                                    <span></span>
+                                    <strong>@editingOrder.TotalPrice.ToString("N2")€</strong>
+                                    <span></span>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="empty-items">No hay productos. Pulsa "+ Añadir producto".</div>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(formError))
+                    {
+                        <div class="form-error">@formError</div>
+                    }
+                }
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" @onclick="CloseModal">Cancelar</button>
+                <button class="btn btn-primary" @onclick="SaveOrder" disabled="@saving">
+                    @(saving ? "Guardando..." : "Guardar pedido")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Delete confirmation -->
+@if (orderToDelete != null)
+{
+    <div class="modal-overlay" @onclick="CancelDelete">
+        <div class="modal-panel modal-sm" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2 class="modal-title">Eliminar pedido</h2>
+                <button class="modal-close" @onclick="CancelDelete">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>¿Seguro que quieres eliminar el pedido de <strong>@orderToDelete.Store</strong>?</p>
+                <p class="delete-warning">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" @onclick="CancelDelete">Cancelar</button>
+                <button class="btn btn-danger" @onclick="DeleteOrder">Eliminar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Order> allOrders = new();
+    private List<Order> filteredOrders = new();
+    private bool loading = true;
+    private string searchText = "";
+    private string selectedStatus = "";
+    private string sortField = "date-desc";
+    private bool showModal = false;
+    private Order? editingOrder;
+    private Order? orderToDelete;
+    private string formError = "";
+    private bool saving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrders();
+    }
+
+    private async Task LoadOrders()
+    {
+        loading = true;
+        allOrders = await OrderSvc.GetAllAsync();
+        FilterOrders();
+        loading = false;
+    }
+
+    private void FilterOrders()
+    {
+        var q = allOrders.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            var s = searchText.ToLower();
+            q = q.Where(o => o.Store.ToLower().Contains(s) ||
+                             (o.TrackingCode?.ToLower().Contains(s) ?? false));
+        }
+
+        if (!string.IsNullOrEmpty(selectedStatus) && Enum.TryParse<OrderStatus>(selectedStatus, out var status))
+            q = q.Where(o => o.Status == status);
+
+        q = sortField switch
+        {
+            "date-asc" => q.OrderBy(o => o.PurchaseDate),
+            "price-desc" => q.OrderByDescending(o => o.TotalPrice),
+            "price-asc" => q.OrderBy(o => o.TotalPrice),
+            _ => q.OrderByDescending(o => o.PurchaseDate)
+        };
+
+        filteredOrders = q.ToList();
+    }
+
+    private void OpenCreateModal()
+    {
+        editingOrder = new Order { PurchaseDate = DateTime.Today };
+        formError = "";
+        showModal = true;
+    }
+
+    private void OpenEditModal(Order order)
+    {
+        editingOrder = new Order
+        {
+            Id = order.Id,
+            Store = order.Store,
+            PurchaseDate = order.PurchaseDate,
+            ShippingCompany = order.ShippingCompany,
+            TrackingCode = order.TrackingCode,
+            TrackingUrl = order.TrackingUrl,
+            Status = order.Status,
+            EstimatedDelivery = order.EstimatedDelivery,
+            Notes = order.Notes,
+            TotalPrice = order.TotalPrice,
+            Items = order.Items.Select(i => new OrderItem
+            {
+                Id = i.Id,
+                ProductName = i.ProductName,
+                Quantity = i.Quantity,
+                UnitPrice = i.UnitPrice
+            }).ToList()
+        };
+        formError = "";
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        editingOrder = null;
+    }
+
+    private void AddItem()
+    {
+        editingOrder?.Items.Add(new OrderItem { Quantity = 1 });
+    }
+
+    private void RemoveItem(OrderItem item)
+    {
+        editingOrder?.Items.Remove(item);
+        RecalcTotal();
+    }
+
+    private void RecalcTotal()
+    {
+        if (editingOrder != null)
+            editingOrder.TotalPrice = editingOrder.Items.Sum(i => i.Quantity * i.UnitPrice);
+    }
+
+    private async Task SaveOrder()
+    {
+        if (editingOrder == null) return;
+
+        if (string.IsNullOrWhiteSpace(editingOrder.Store))
+        {
+            formError = "La tienda es obligatoria.";
+            return;
+        }
+
+        saving = true;
+        formError = "";
+        RecalcTotal();
+
+        if (editingOrder.Id == 0)
+            await OrderSvc.CreateAsync(editingOrder);
+        else
+            await OrderSvc.UpdateAsync(editingOrder);
+
+        saving = false;
+        showModal = false;
+        editingOrder = null;
+        await LoadOrders();
+    }
+
+    private async Task ChangeStatus(int orderId, ChangeEventArgs e)
+    {
+        if (Enum.TryParse<OrderStatus>(e.Value?.ToString(), out var status))
+        {
+            await OrderSvc.UpdateStatusAsync(orderId, status);
+            var order = allOrders.FirstOrDefault(o => o.Id == orderId);
+            if (order != null) order.Status = status;
+            FilterOrders();
+        }
+    }
+
+    private void ConfirmDelete(Order order) => orderToDelete = order;
+    private void CancelDelete() => orderToDelete = null;
+
+    private async Task DeleteOrder()
+    {
+        if (orderToDelete == null) return;
+        await OrderSvc.SoftDeleteAsync(orderToDelete.Id);
+        orderToDelete = null;
+        await LoadOrders();
+    }
+
+    private bool IsDelayed(Order order) =>
+        order.EstimatedDelivery.HasValue &&
+        order.EstimatedDelivery.Value < DateTime.Now &&
+        order.Status != OrderStatus.Recibido &&
+        order.Status != OrderStatus.Cancelado;
+
+    private string GetStatusLabel(OrderStatus status) => status switch
+    {
+        OrderStatus.Comprado => "Comprado",
+        OrderStatus.PreparandoEnvio => "Preparando envío",
+        OrderStatus.Enviado => "Enviado",
+        OrderStatus.EnReparto => "En reparto",
+        OrderStatus.Incidencia => "Incidencia",
+        OrderStatus.Recibido => "Recibido",
+        OrderStatus.Cancelado => "Cancelado",
+        _ => status.ToString()
+    };
+
+    private string GetCompanyLabel(ShippingCompany c) => c switch
+    {
+        ShippingCompany.Desconocido => "—",
+        ShippingCompany.CorreosExpress => "Correos Express",
+        ShippingCompany.AmazonLogistics => "Amazon Logistics",
+        _ => c.ToString()
+    };
+}
