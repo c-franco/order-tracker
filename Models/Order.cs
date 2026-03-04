@@ -29,6 +29,7 @@ public enum ShippingCompany
     Nacex,
     Ctt,
     Zeleris,
+    EcoScooting,
     Otro
 }
 

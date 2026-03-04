@@ -51,6 +51,10 @@ public class ShippingDetectionService
             new[] { @"^\d{11}$" },
             "https://www.zeleris.com/seguimiento?referencia={0}"
         ),
+        [ShippingCompany.EcoScooting] = (
+            new[] { @"^ECO\d+$" },
+            "https://ecoscooting.com/tracking/{0}"
+        ),
     };
 
     public (ShippingCompany company, string? url) DetectShipping(string? trackingCode)
@@ -101,6 +105,7 @@ public class ShippingDetectionService
         ShippingCompany.Nacex => "Nacex",
         ShippingCompany.Ctt => "CTT",
         ShippingCompany.Zeleris => "Zeleris",
+        ShippingCompany.EcoScooting => "EcoScooting",
         ShippingCompany.Otro => "Otro",
         _ => "Desconocido"
     };
