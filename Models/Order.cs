@@ -6,31 +6,11 @@ namespace OrderTracker.Models;
 public enum OrderStatus
 {
     Comprado,
-    PreparandoEnvio,
     Enviado,
     EnReparto,
     Incidencia,
     Recibido,
     Cancelado
-}
-
-public enum ShippingCompany
-{
-    Desconocido,
-    Correos,
-    CorreosExpress,
-    SEUR,
-    MRW,
-    DHL,
-    GLS,
-    UPS,
-    FedEx,
-    AmazonLogistics,
-    Nacex,
-    Ctt,
-    Zeleris,
-    EcoScooting,
-    Otro
 }
 
 public class Order
@@ -44,7 +24,8 @@ public class Order
     [Required(ErrorMessage = "La fecha de compra es obligatoria")]
     public DateTime PurchaseDate { get; set; } = DateTime.Now;
 
-    public ShippingCompany ShippingCompany { get; set; } = ShippingCompany.Desconocido;
+    public int? CarrierId { get; set; }
+    public Carrier? Carrier { get; set; }
 
     [MaxLength(100)]
     public string? TrackingCode { get; set; }

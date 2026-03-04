@@ -7,7 +7,6 @@ public class OrderDto
     public int Id { get; set; }
     public string Store { get; set; } = string.Empty;
     public DateTime PurchaseDate { get; set; }
-    public ShippingCompany ShippingCompany { get; set; }
     public string? TrackingCode { get; set; }
     public string? TrackingUrl { get; set; }
     public OrderStatus Status { get; set; }

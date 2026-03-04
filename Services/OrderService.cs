@@ -8,18 +8,19 @@ namespace OrderTracker.Services;
 public class OrderService
 {
     private readonly AppDbContext _db;
-    private readonly ShippingDetectionService _shipping;
+    private readonly CarrierService _carrierService;
 
-    public OrderService(AppDbContext db, ShippingDetectionService shipping)
+    public OrderService(AppDbContext db, CarrierService carrierService)
     {
         _db = db;
-        _shipping = shipping;
+        _carrierService = carrierService;
     }
 
     public async Task<List<Order>> GetAllAsync(string? search = null, OrderStatus? statusFilter = null)
     {
         var query = _db.Orders
             .Include(o => o.Items)
+            .Include(o => o.Carrier)
             .Where(o => !o.IsDeleted)
             .AsQueryable();
 
@@ -41,22 +42,16 @@ public class OrderService
     {
         return await _db.Orders
             .Include(o => o.Items)
+            .Include(o => o.Carrier)
             .FirstOrDefaultAsync(o => o.Id == id && !o.IsDeleted);
     }
 
     public async Task<Order> CreateAsync(Order order)
     {
-        // Auto-detect shipping company
-        if (!string.IsNullOrWhiteSpace(order.TrackingCode) && order.ShippingCompany == ShippingCompany.Desconocido)
+        if (!string.IsNullOrWhiteSpace(order.TrackingCode) && string.IsNullOrWhiteSpace(order.TrackingUrl) && order.CarrierId.HasValue)
         {
-            var (company, url) = _shipping.DetectShipping(order.TrackingCode);
-            order.ShippingCompany = company;
-            if (string.IsNullOrWhiteSpace(order.TrackingUrl))
-                order.TrackingUrl = url;
-        }
-        else if (!string.IsNullOrWhiteSpace(order.TrackingCode) && string.IsNullOrWhiteSpace(order.TrackingUrl))
-        {
-            order.TrackingUrl = _shipping.GetTrackingUrl(order.ShippingCompany, order.TrackingCode);
+            var carrier = await _carrierService.GetByIdAsync(order.CarrierId.Value);
+            order.TrackingUrl = _carrierService.GetTrackingUrl(carrier, order.TrackingCode);
         }
 
         RecalculateTotal(order);
@@ -75,35 +70,23 @@ public class OrderService
 
         existing.Store = order.Store;
         existing.PurchaseDate = order.PurchaseDate;
-        existing.ShippingCompany = order.ShippingCompany;
+        existing.CarrierId = order.CarrierId;
         existing.TrackingCode = order.TrackingCode;
         existing.Status = order.Status;
         existing.EstimatedDelivery = order.EstimatedDelivery;
         existing.Notes = order.Notes;
         existing.UpdatedAt = DateTime.Now;
 
-        // Auto-detect or generate tracking URL
-        if (!string.IsNullOrWhiteSpace(order.TrackingCode))
+        if (!string.IsNullOrWhiteSpace(order.TrackingCode) && string.IsNullOrWhiteSpace(order.TrackingUrl) && order.CarrierId.HasValue)
         {
-            if (order.ShippingCompany == ShippingCompany.Desconocido)
-            {
-                var (company, url) = _shipping.DetectShipping(order.TrackingCode);
-                existing.ShippingCompany = company;
-                existing.TrackingUrl = string.IsNullOrWhiteSpace(order.TrackingUrl) ? url : order.TrackingUrl;
-            }
-            else
-            {
-                existing.TrackingUrl = string.IsNullOrWhiteSpace(order.TrackingUrl)
-                    ? _shipping.GetTrackingUrl(order.ShippingCompany, order.TrackingCode)
-                    : order.TrackingUrl;
-            }
+            var carrier = await _carrierService.GetByIdAsync(order.CarrierId.Value);
+            existing.TrackingUrl = _carrierService.GetTrackingUrl(carrier, order.TrackingCode);
         }
         else
         {
-            existing.TrackingUrl = null;
+            existing.TrackingUrl = string.IsNullOrWhiteSpace(order.TrackingCode) ? null : order.TrackingUrl;
         }
 
-        // Replace items
         _db.OrderItems.RemoveRange(existing.Items);
         existing.Items = order.Items;
 

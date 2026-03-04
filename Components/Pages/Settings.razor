@@ -1,0 +1,121 @@
+@page "/settings"
+@using OrderTracker.Services
+@using OrderTracker.Models
+@inject CarrierService CarrierSvc
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>📦 Order Tracker — Ajustes</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Ajustes</h1>
+        <p class="page-subtitle">Configuración de la aplicación</p>
+    </div>
+</div>
+
+<div class="settings-container">
+    <div class="settings-section">
+        <div class="settings-section-header">
+            <div>
+                <h2 class="settings-section-title">Transportistas</h2>
+                <p class="settings-section-desc">Gestiona la lista de empresas de reparto y sus URLs de seguimiento.</p>
+            </div>
+            <button class="btn btn-secondary" @onclick="AddCarrier">+ Añadir transportista</button>
+        </div>
+
+        @if (loading)
+        {
+            <div class="loading-state">Cargando transportistas...</div>
+        }
+        else
+        {
+            <div class="carriers-table-wrap">
+                <table class="carriers-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>URL de seguimiento <span class="th-hint">usa {0} como placeholder del código</span></th>
+                            <th>Orden</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var carrier in carriers)
+                        {
+                            <tr>
+                                <td>
+                                    <input class="form-input" @bind="carrier.Name" placeholder="Nombre del transportista" />
+                                </td>
+                                <td>
+                                    <input class="form-input" @bind="carrier.TrackingUrlTemplate" placeholder="https://ejemplo.com/tracking/{0}" />
+                                </td>
+                                <td>
+                                    <input class="form-input form-input-xs" type="number" min="0" @bind="carrier.SortOrder" />
+                                </td>
+                                <td>
+                                    <button class="btn-icon btn-delete" @onclick="() => RemoveCarrier(carrier)" title="Eliminar">✕</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (!string.IsNullOrEmpty(saveMessage))
+            {
+                <div class="save-message @(saveError ? "save-error" : "save-success")">@saveMessage</div>
+            }
+
+            <div class="settings-actions">
+                <button class="btn btn-primary" @onclick="Save" disabled="@saving">
+                    @(saving ? "Guardando..." : "Guardar cambios")
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Carrier> carriers = new();
+    private bool loading = true;
+    private bool saving = false;
+    private string saveMessage = "";
+    private bool saveError = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        carriers = await CarrierSvc.GetAllAsync();
+        loading = false;
+    }
+
+    private void AddCarrier()
+    {
+        carriers.Add(new Carrier { SortOrder = carriers.Count > 0 ? carriers.Max(c => c.SortOrder) + 1 : 1 });
+    }
+
+    private void RemoveCarrier(Carrier carrier)
+    {
+        carriers.Remove(carrier);
+    }
+
+    private async Task Save()
+    {
+        saving = true;
+        saveMessage = "";
+
+        try
+        {
+            await CarrierSvc.SaveAllAsync(carriers);
+            saveMessage = "✓ Cambios guardados correctamente.";
+            saveError = false;
+            carriers = await CarrierSvc.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            saveMessage = $"Error al guardar: {ex.Message}";
+            saveError = true;
+        }
+
+        saving = false;
+    }
+}

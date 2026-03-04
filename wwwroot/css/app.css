@@ -68,7 +68,7 @@ a:hover { color: var(--accent-hover); }
 .app-shell {
   display: flex;
   height: 100vh;
-  overflow: hidden;
+  overflow: clip;
 }
 
 /* ── Sidebar ── */
@@ -351,7 +351,7 @@ a:hover { color: var(--accent-hover); }
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .orders-table {
@@ -470,7 +470,6 @@ a:hover { color: var(--accent-hover); }
 
 /* Status colors */
 .status-comprado, .status-badge.status-comprado { background: rgba(79,142,247,0.12); color: #4f8ef7; }
-.status-preparandoenvio, .status-badge.status-preparandoenvio { background: rgba(245,166,35,0.12); color: #f5a623; }
 .status-enviado, .status-badge.status-enviado { background: rgba(56,189,248,0.12); color: #38bdf8; }
 .status-enreparto, .status-badge.status-enreparto { background: rgba(168,85,247,0.12); color: #a855f7; }
 .status-incidencia, .status-badge.status-incidencia { background: rgba(240,68,56,0.12); color: #f04438; }
@@ -479,12 +478,17 @@ a:hover { color: var(--accent-hover); }
 
 /* Status select bg */
 .status-select.status-comprado { background: rgba(79,142,247,0.12); color: #4f8ef7; }
-.status-select.status-preparandoenvio { background: rgba(245,166,35,0.12); color: #f5a623; }
 .status-select.status-enviado { background: rgba(56,189,248,0.12); color: #38bdf8; }
 .status-select.status-enreparto { background: rgba(168,85,247,0.12); color: #a855f7; }
 .status-select.status-incidencia { background: rgba(240,68,56,0.12); color: #f04438; }
 .status-select.status-recibido { background: rgba(62,207,142,0.12); color: #3ecf8e; }
 .status-select.status-cancelado { background: rgba(100,116,139,0.12); color: #64748b; }
+
+/* Options inside status select always neutral */
+.status-select option {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+}
 
 /* ── Modal ── */
 .modal-overlay {
@@ -691,7 +695,170 @@ a:hover { color: var(--accent-hover); }
 
 .delete-warning { color: var(--text-secondary); margin-top: 8px; font-size: 13px; }
 
-/* ── Scrollbar ── */
+/* ── Settings ── */
+.settings-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.settings-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+}
+
+.settings-section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 16px;
+}
+
+.settings-section-title {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.settings-section-desc {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+}
+
+.carriers-table-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.carriers-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.carriers-table thead {
+    background: var(--bg-elevated);
+}
+
+.carriers-table th {
+    padding: 9px 14px;
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+}
+
+.th-hint {
+    font-family: var(--sans);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-left: 6px;
+}
+
+.carriers-table td {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+.carriers-table tr:last-child td { border-bottom: none; }
+
+.form-input-xs { width: 70px; }
+
+.settings-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.save-message {
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-bottom: 14px;
+}
+
+.save-success {
+    background: rgba(62,207,142,0.1);
+    border: 1px solid rgba(62,207,142,0.3);
+    color: var(--success);
+}
+
+.save-error {
+    background: rgba(240,68,56,0.1);
+    border: 1px solid rgba(240,68,56,0.3);
+    color: var(--danger);
+}
+
+/* ── Custom Status Dropdown ── */
+.custom-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-trigger {
+    cursor: pointer;
+    border: none;
+    font-family: var(--sans);
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    padding: 4px 9px;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 9999;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    min-width: 150px;
+    overflow: hidden;
+    animation: slideUp 0.12s ease;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.dropdown-item:hover { background: var(--bg-card); }
+.dropdown-item.active { background: var(--accent-dim); color: var(--accent); }
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-dot-comprado { background: #4f8ef7; }
+.status-dot-enviado { background: #38bdf8; }
+.status-dot-enreparto { background: #a855f7; }
+.status-dot-incidencia { background: #f04438; }
+.status-dot-recibido { background: #3ecf8e; }
+.status-dot-cancelado { background: #64748b; } */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }

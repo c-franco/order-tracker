@@ -12,7 +12,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=orders.db"));
 
 builder.Services.AddScoped<OrderService>();
-builder.Services.AddSingleton<ShippingDetectionService>();
+builder.Services.AddScoped<CarrierService>();
 
 var app = builder.Build();
 
