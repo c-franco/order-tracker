@@ -135,6 +135,10 @@ else
                         <td class="price-cell">@order.TotalPrice.ToString("N2")€</td>
                         <td>
                             <div class="action-btns">
+                                @if (!string.IsNullOrEmpty(order.TrackingUrl))
+                                {
+                                    <a href="@order.TrackingUrl" target="_blank" class="btn-icon btn-track mobile-track-btn" title="Seguimiento">⬡</a>
+                                }
                                 <button class="btn-icon btn-edit" @onclick="() => OpenEditModal(order)" title="Editar">✏</button>
                                 <button class="btn-icon btn-delete" @onclick="() => ConfirmDelete(order)" title="Eliminar">✕</button>
                             </div>

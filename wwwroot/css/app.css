@@ -1000,7 +1000,11 @@ a:hover { color: var(--accent-hover); }
 }
 
 /* ── Móvil (≤ 480px) ── */
+.btn-track { color: var(--text-secondary); display: none; }
+.btn-track:hover { border-color: var(--info); color: var(--info); background: rgba(56,189,248,0.08); }
+
 @media (max-width: 480px) {
+  .btn-track { display: inline-flex; }
   .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .metric-card { padding: 12px; gap: 10px; }
   .metric-icon { font-size: 20px; }
