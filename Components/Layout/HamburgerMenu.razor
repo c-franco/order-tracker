@@ -1,0 +1,37 @@
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<div class="hamburger-wrap">
+    <button class="hamburger" @onclick="Toggle" aria-label="Abrir menú">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+</div>
+
+@if (IsOpen)
+{
+    <div class="sidebar-overlay" @onclick="Close"></div>
+}
+
+<nav class="sidebar @(IsOpen ? "sidebar-open" : "")">
+    <div class="sidebar-brand">
+        <span class="brand-icon">📦</span>
+        <span class="brand-text">OrderTracker</span>
+    </div>
+    <ul class="sidebar-nav">
+        <li><a href="/" class="nav-link" @onclick="Close"><span class="nav-icon">◈</span><span class="nav-text"> Dashboard</span></a></li>
+        <li><a href="/orders" class="nav-link" @onclick="Close"><span class="nav-icon">≡</span><span class="nav-text"> Pedidos</span></a></li>
+        <li><a href="/settings" class="nav-link" @onclick="Close"><span class="nav-icon">⚙</span><span class="nav-text"> Ajustes</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+        <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
+            <span id="theme-icon">☀</span>
+        </button>
+    </div>
+</nav>
+
+@code {
+    private bool IsOpen = false;
+    private void Toggle() => IsOpen = !IsOpen;
+    private void Close() => IsOpen = false;
+}

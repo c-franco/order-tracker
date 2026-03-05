@@ -384,6 +384,10 @@ a:hover { color: var(--accent-hover); }
 
 .order-row:last-child td { border-bottom: none; }
 .order-row:hover { background: var(--bg-elevated); }
+.order-row-recibido { background: rgba(62, 207, 142, 0.05) !important; }
+.order-row-recibido:hover { background: rgba(62, 207, 142, 0.09) !important; }
+.order-row-cancelado { background: rgba(100, 116, 139, 0.06) !important; }
+.order-row-cancelado:hover { background: rgba(100, 116, 139, 0.10) !important; }
 
 .store-name { font-weight: 600; }
 .order-notes { margin-left: 6px; cursor: help; }
@@ -858,26 +862,174 @@ a:hover { color: var(--accent-hover); }
 .status-dot-enreparto { background: #a855f7; }
 .status-dot-incidencia { background: #f04438; }
 .status-dot-recibido { background: #3ecf8e; }
-.status-dot-cancelado { background: #64748b; } */
+.status-dot-cancelado { background: #64748b; }
+
+/* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* ── Responsive ── */
-@media (max-width: 900px) {
-  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
-  .dashboard-sections { grid-template-columns: 1fr; }
-  .form-grid { grid-template-columns: 1fr; }
-  .form-full { grid-column: 1; }
-  .sidebar { width: 60px; }
-  .brand-text, .nav-link span:not(.nav-icon) { display: none; }
-  .items-header, .items-row, .items-total { grid-template-columns: 1fr 70px 100px 80px 28px; }
+/* ── Mobile Topbar (hidden on desktop) ── */
+.mobile-topbar {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
-@media (max-width: 600px) {
-  .content-wrapper { padding: 16px; }
-  .metrics-grid { grid-template-columns: 1fr 1fr; }
+.mobile-brand {
+    flex: 1;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.hamburger-wrap {
+    display: none;
+}
+
+.hamburger {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 36px;
+    height: 36px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    padding: 8px;
+    flex-shrink: 0;
+}
+
+.hamburger span {
+    display: block;
+    height: 2px;
+    background: var(--text-primary);
+    border-radius: 2px;
+}
+
+.theme-toggle-mobile {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: var(--radius);
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 149;
+}
+
+/* ══════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════ */
+
+/* ── Tablet (≤ 1024px) ── */
+@media (max-width: 1024px) {
+  .dashboard-sections { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .orders-table th:nth-child(3),
+  .orders-table td:nth-child(3) { display: none; }
+}
+
+/* ── Tablet pequeña / Móvil (≤ 768px) ── */
+@media (max-width: 768px) {
+  .mobile-topbar { display: flex; }
+  .hamburger-wrap { display: block; }
+
+  .sidebar {
+    position: fixed;
+    left: -220px;
+    top: 0;
+    height: 100vh;
+    z-index: 150;
+    width: 220px;
+    transition: left 0.25s ease;
+  }
+
+  .sidebar-open { left: 0 !important; }
+
+  .sidebar-footer { display: none; }
+  .brand-text { display: block !important; }
+  .nav-text { display: inline !important; }
+
+  .content-wrapper { padding: 20px 16px; }
+
+  .page-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .page-header .btn { width: 100%; justify-content: center; }
+
   .filters-bar { flex-wrap: wrap; }
-  .page-header { flex-direction: column; gap: 12px; }
+  .search-wrap { flex: 1 1 100%; }
+  .filter-wrap, .sort-wrap { flex: 1 1 calc(50% - 6px); }
+
+  .orders-table th:nth-child(6),
+  .orders-table td:nth-child(6) { display: none; }
+
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .metric-card { padding: 14px; }
+  .metric-value { font-size: 20px; }
+
+  .modal-panel { max-width: 100%; margin: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; max-height: 95vh; }
+  .modal-overlay { align-items: flex-end; padding: 0; }
+
+  .form-grid { grid-template-columns: 1fr; }
+  .form-full { grid-column: 1; }
+
+  .items-header { display: none; }
+  .items-row { grid-template-columns: 1fr 60px 90px 70px 28px; gap: 6px; padding: 8px 10px; }
+  .items-total { grid-template-columns: 1fr 60px 90px 70px 28px; gap: 6px; padding: 8px 10px; }
+
+  .carriers-table th:nth-child(3),
+  .carriers-table td:nth-child(3) { display: none; }
+  .settings-section-header { flex-direction: column; align-items: flex-start; }
+}
+
+/* ── Móvil (≤ 480px) ── */
+@media (max-width: 480px) {
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .metric-card { padding: 12px; gap: 10px; }
+  .metric-icon { font-size: 20px; }
+  .metric-value { font-size: 18px; }
+  .metric-label { font-size: 10px; }
+
+  .content-wrapper { padding: 14px 12px; }
+
+  .filters-bar { gap: 8px; }
+  .filter-wrap, .sort-wrap { flex: 1 1 100%; }
+
+  .orders-table th:nth-child(2),
+  .orders-table td:nth-child(2) { display: none; }
+  .orders-table th:nth-child(4),
+  .orders-table td:nth-child(4) { display: none; }
+  .orders-table th:nth-child(7),
+  .orders-table td:nth-child(7) { display: none; }
+
+  .orders-table th, .orders-table td { padding: 10px 8px; }
+  .table-footer { font-size: 12px; padding: 10px 12px; }
+
+  .order-preview-row { grid-template-columns: 1fr 90px; gap: 8px; }
+  .order-preview-date, .order-preview-price { display: none; }
+
+  .status-breakdown-row { grid-template-columns: 100px 1fr 28px; }
+
+  .items-row { grid-template-columns: 1fr 50px 80px 64px 28px; gap: 4px; }
+  .items-total { grid-template-columns: 1fr 50px 80px 64px 28px; gap: 4px; }
+
+  .carriers-table th:nth-child(2),
+  .carriers-table td:nth-child(2) { display: none; }
 }

@@ -74,7 +74,7 @@ else
             <tbody>
                 @foreach (var order in filteredOrders)
                 {
-                    <tr class="order-row">
+                    <tr class="order-row order-row-@order.Status.ToString().ToLower()">
                         <td>
                             <span class="store-name">@order.Store</span>
                             @if (!string.IsNullOrEmpty(order.Notes))

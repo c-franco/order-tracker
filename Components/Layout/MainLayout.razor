@@ -1,24 +1,17 @@
 @inherits LayoutComponentBase
 
 <div class="app-shell">
-    <nav class="sidebar">
-        <div class="sidebar-brand">
-            <span class="brand-icon">📦</span>
-            <span class="brand-text">OrderTracker</span>
-        </div>
-        <ul class="sidebar-nav">
-            <li><a href="/" class="nav-link"><span class="nav-icon">◈</span> Dashboard</a></li>
-            <li><a href="/orders" class="nav-link"><span class="nav-icon">≡</span> Pedidos</a></li>
-            <li><a href="/settings" class="nav-link"><span class="nav-icon">⚙</span> Ajustes</a></li>
-        </ul>
-        <div class="sidebar-footer">
-            <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
-                <span id="theme-icon">☀</span>
-            </button>
-        </div>
-    </nav>
+    <HamburgerMenu />
 
     <main class="main-content">
+        <div class="mobile-topbar">
+            <div id="hamburger-slot"></div>
+            <span class="mobile-brand">📦 OrderTracker</span>
+            <button class="theme-toggle-mobile" onclick="toggleTheme()" title="Cambiar tema">
+                <span id="theme-icon-mobile">☀</span>
+            </button>
+        </div>
+
         <div class="content-wrapper">
             @Body
         </div>
@@ -31,12 +24,31 @@
         const current = html.getAttribute('data-theme');
         const next = current === 'dark' ? 'light' : 'dark';
         html.setAttribute('data-theme', next);
-        document.getElementById('theme-icon').textContent = next === 'dark' ? '☀' : '◑';
+        const icon = next === 'dark' ? '☀' : '◑';
+        ['theme-icon','theme-icon-mobile'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = icon;
+        });
         localStorage.setItem('theme', next);
     }
-    // Restore theme
     const saved = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
-    const icon = document.getElementById('theme-icon');
-    if (icon) icon.textContent = saved === 'dark' ? '☀' : '◑';
+    const icon = saved === 'dark' ? '☀' : '◑';
+    ['theme-icon','theme-icon-mobile'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = icon;
+    });
+
+    // Move hamburger button into topbar slot after render
+    function moveHamburger() {
+        const wrap = document.querySelector('.hamburger-wrap');
+        const slot = document.getElementById('hamburger-slot');
+        if (wrap && slot && !slot.contains(wrap)) {
+            slot.appendChild(wrap);
+        }
+    }
+    document.addEventListener('DOMContentLoaded', moveHamburger);
+    // Also try after Blazor updates
+    const obs = new MutationObserver(moveHamburger);
+    obs.observe(document.body, { childList: true, subtree: true });
 </script>
