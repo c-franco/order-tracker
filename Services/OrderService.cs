@@ -129,7 +129,7 @@ public class OrderService
             InDelivery = orders.Count(o => o.Status == OrderStatus.EnReparto),
             Delayed = orders.Count(o =>
                 o.EstimatedDelivery.HasValue &&
-                o.EstimatedDelivery.Value < now &&
+                o.EstimatedDelivery.Value.Date < DateTime.Today &&
                 o.Status != OrderStatus.Recibido &&
                 o.Status != OrderStatus.Cancelado),
             TotalSpent = orders

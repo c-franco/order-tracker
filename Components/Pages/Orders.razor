@@ -466,7 +466,7 @@ else
 
     private bool IsDelayed(Order order) =>
         order.EstimatedDelivery.HasValue &&
-        order.EstimatedDelivery.Value < DateTime.Now &&
+        order.EstimatedDelivery.Value.Date < DateTime.Today &&
         order.Status != OrderStatus.Recibido &&
         order.Status != OrderStatus.Cancelado;
 
