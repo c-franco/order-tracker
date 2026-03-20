@@ -1074,3 +1074,10 @@ a:hover { color: var(--accent-hover); }
 }
 
 .import-error-line { font-size: 12px; color: var(--danger); }
+
+/* ── Settings data actions ── */
+.data-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
