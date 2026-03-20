@@ -103,15 +103,15 @@ else
                             }
                         </td>
                         <td>
-                            <div class="custom-dropdown @(openDropdownId == order.Id ? "open" : "")">
+                            <div class="custom-dropdown">
                                 <button class="status-badge status-@order.Status.ToString().ToLower() dropdown-trigger"
-                                        @onclick="() => ToggleDropdown(order.Id)"
+                                        @onclick="e => ToggleDropdown(order.Id, e)"
                                         @onclick:stopPropagation="true">
                                     @GetStatusLabel(order.Status) ▾
                                 </button>
                                 @if (openDropdownId == order.Id)
                                 {
-                                    <div class="dropdown-menu" @onclick:stopPropagation="true">
+                                    <div class="dropdown-menu" style="top: @(dropdownTop)px; left: @(dropdownLeft)px;" @onclick:stopPropagation="true">
                                         @foreach (var s in Enum.GetValues<OrderStatus>())
                                         {
                                             <div class="dropdown-item @(s == order.Status ? "active" : "")"
@@ -147,9 +147,9 @@ else
                 }
             </tbody>
         </table>
-    </div>
-    <div class="table-footer">
-        <span>@filteredOrders.Count pedido@(filteredOrders.Count != 1 ? "s" : "") · Total: <strong>@filteredOrders.Sum(o => o.TotalPrice).ToString("N2")€</strong></span>
+        <div class="table-footer">
+            <span>@filteredOrders.Count pedido@(filteredOrders.Count != 1 ? "s" : "") · Total: <strong>@filteredOrders.Sum(o => o.TotalPrice).ToString("N2")€</strong></span>
+        </div>
     </div>
 }
 
@@ -427,10 +427,21 @@ else
     }
 
     private int? openDropdownId = null;
+    private double dropdownTop = 0;
+    private double dropdownLeft = 0;
 
-    private void ToggleDropdown(int orderId)
+    private void ToggleDropdown(int orderId, MouseEventArgs e)
     {
-        openDropdownId = openDropdownId == orderId ? null : orderId;
+        if (openDropdownId == orderId)
+        {
+            openDropdownId = null;
+        }
+        else
+        {
+            openDropdownId = orderId;
+            dropdownTop = e.ClientY + 8;
+            dropdownLeft = e.ClientX - 10;
+        }
     }
 
     private async Task ChangeStatusFromDropdown(int orderId, OrderStatus status)
