@@ -18,6 +18,7 @@
         <button class="btn btn-secondary" @onclick="ExportCsv" disabled="@exporting">
             @(exporting ? "Exportando..." : "↓ Exportar CSV")
         </button>
+        <button class="btn btn-secondary" @onclick="() => showImportModal = true">↑ Importar CSV</button>
         <button class="btn btn-primary" @onclick="OpenCreateModal">+ Nuevo pedido</button>
     </div>
 </div>
@@ -156,6 +157,63 @@ else
         </table>
         <div class="table-footer">
             <span>@filteredOrders.Count pedido@(filteredOrders.Count != 1 ? "s" : "") · Total: <strong>@filteredOrders.Sum(o => o.TotalPrice).ToString("N2")€</strong></span>
+        </div>
+    </div>
+}
+
+<!-- Import Modal -->
+@if (showImportModal)
+{
+    <div class="modal-overlay" @onclick="() => { showImportModal = false; importResult = null; }">
+        <div class="modal-panel modal-sm" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2 class="modal-title">Importar CSV</h2>
+                <button class="modal-close" @onclick="() => { showImportModal = false; importResult = null; }">✕</button>
+            </div>
+            <div class="modal-body">
+                @if (importResult == null)
+                {
+                    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 16px;">
+                        Selecciona un archivo CSV exportado previamente desde esta aplicación.
+                        Los pedidos se añadirán sin reemplazar los existentes.
+                    </p>
+                    <InputFile class="form-input" accept=".csv" OnChange="HandleImportFile" />
+                    @if (!string.IsNullOrEmpty(importError))
+                    {
+                        <div class="form-error" style="margin-top: 12px;">@importError</div>
+                    }
+                    @if (importing)
+                    {
+                        <div class="loading-state" style="padding: 16px 0;">Importando...</div>
+                    }
+                }
+                else
+                {
+                    <div class="import-result">
+                        <div class="import-stat @(importResult.Value.imported > 0 ? "import-ok" : "")">
+                            ✓ @importResult.Value.imported pedido@(importResult.Value.imported != 1 ? "s" : "") importado@(importResult.Value.imported != 1 ? "s" : "")
+                        </div>
+                        @if (importResult.Value.skipped > 0)
+                        {
+                            <div class="import-stat import-warn">
+                                ⚠ @importResult.Value.skipped fila@(importResult.Value.skipped != 1 ? "s" : "") omitida@(importResult.Value.skipped != 1 ? "s" : "")
+                            </div>
+                        }
+                        @if (importResult.Value.errors.Any())
+                        {
+                            <div class="import-errors">
+                                @foreach (var err in importResult.Value.errors)
+                                {
+                                    <div class="import-error-line">@err</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" @onclick="() => { showImportModal = false; importResult = null; }">Cerrar</button>
+            </div>
         </div>
     </div>
 }
@@ -313,6 +371,10 @@ else
     private string formError = "";
     private bool saving = false;
     private bool exporting = false;
+    private bool showImportModal = false;
+    private bool importing = false;
+    private string importError = "";
+    private (int imported, int skipped, List<string> errors)? importResult = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -511,6 +573,30 @@ else
         order.EstimatedDelivery.Value.Date < DateTime.Today &&
         order.Status != OrderStatus.Recibido &&
         order.Status != OrderStatus.Cancelado;
+
+    private async Task HandleImportFile(InputFileChangeEventArgs e)
+    {
+        importError = "";
+        importing = true;
+        importResult = null;
+
+        try
+        {
+            using var stream = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            using var reader = new System.IO.StreamReader(stream, System.Text.Encoding.UTF8);
+            var csv = await reader.ReadToEndAsync();
+            var carriers = await CarrierSvc.GetAllAsync();
+            importResult = await OrderSvc.ImportFromCsvAsync(csv, carriers);
+            if (importResult.Value.imported > 0)
+                await LoadOrders();
+        }
+        catch (Exception ex)
+        {
+            importError = "Error al leer el archivo: " + ex.Message;
+        }
+
+        importing = false;
+    }
 
     private async Task ExportCsv()
     {
