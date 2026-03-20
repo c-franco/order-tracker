@@ -120,7 +120,6 @@ public class OrderService
     public async Task<DashboardMetrics> GetMetricsAsync()
     {
         var orders = await _db.Orders.Where(o => !o.IsDeleted).ToListAsync();
-        var now = DateTime.Now;
 
         return new DashboardMetrics
         {
@@ -137,6 +136,56 @@ public class OrderService
                 .Sum(o => o.TotalPrice)
         };
     }
+
+    public async Task<string> ExportToCsvAsync()
+    {
+        var orders = await _db.Orders
+            .Include(o => o.Carrier)
+            .Include(o => o.Items)
+            .Where(o => !o.IsDeleted)
+            .OrderByDescending(o => o.PurchaseDate)
+            .ToListAsync();
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Id,Tienda,Fecha compra,Transportista,Codigo envio,Estado,Entrega estimada,Total,Notas,Productos");
+
+        foreach (var order in orders)
+        {
+            var productos = string.Join(" | ", order.Items.Select(i => $"{i.ProductName} x{i.Quantity} ({i.UnitPrice:N2}EUR)"));
+            sb.AppendLine(string.Join(",",
+                order.Id,
+                Escape(order.Store),
+                order.PurchaseDate.ToString("dd/MM/yyyy"),
+                Escape(order.Carrier?.Name ?? ""),
+                Escape(order.TrackingCode ?? ""),
+                Escape(GetStatusLabel(order.Status)),
+                order.EstimatedDelivery?.ToString("dd/MM/yyyy") ?? "",
+                order.TotalPrice.ToString("N2"),
+                Escape(order.Notes ?? ""),
+                Escape(productos)
+            ));
+        }
+
+        return sb.ToString();
+    }
+
+    private static string Escape(string value)
+    {
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        return value;
+    }
+
+    private static string GetStatusLabel(OrderStatus status) => status switch
+    {
+        OrderStatus.Comprado => "Comprado",
+        OrderStatus.Enviado => "Enviado",
+        OrderStatus.EnReparto => "En reparto",
+        OrderStatus.Incidencia => "Incidencia",
+        OrderStatus.Recibido => "Recibido",
+        OrderStatus.Cancelado => "Cancelado",
+        _ => status.ToString()
+    };
 
     private static void RecalculateTotal(Order order)
     {

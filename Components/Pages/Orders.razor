@@ -14,7 +14,12 @@
         <h1 class="page-title">Pedidos</h1>
         <p class="page-subtitle">Gestión de todos tus pedidos online</p>
     </div>
-    <button class="btn btn-primary" @onclick="OpenCreateModal">+ Nuevo pedido</button>
+    <div class="header-actions">
+        <button class="btn btn-secondary" @onclick="ExportCsv" disabled="@exporting">
+            @(exporting ? "Exportando..." : "↓ Exportar CSV")
+        </button>
+        <button class="btn btn-primary" @onclick="OpenCreateModal">+ Nuevo pedido</button>
+    </div>
 </div>
 
 <div class="filters-bar">
@@ -307,6 +312,7 @@ else
     private Order? orderToDelete;
     private string formError = "";
     private bool saving = false;
+    private bool exporting = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -505,6 +511,17 @@ else
         order.EstimatedDelivery.Value.Date < DateTime.Today &&
         order.Status != OrderStatus.Recibido &&
         order.Status != OrderStatus.Cancelado;
+
+    private async Task ExportCsv()
+    {
+        exporting = true;
+        var csv = await OrderSvc.ExportToCsvAsync();
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv);
+        var base64 = Convert.ToBase64String(bytes);
+        var filename = $"pedidos_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+        await JS.InvokeVoidAsync("downloadFile", filename, "text/csv;charset=utf-8;", base64);
+        exporting = false;
+    }
 
     private string GetStatusLabel(OrderStatus status) => status switch
     {
