@@ -390,7 +390,9 @@ a:hover { color: var(--accent-hover); }
 .order-row-cancelado:hover { background: rgba(100, 116, 139, 0.10) !important; }
 
 .store-name { font-weight: 600; }
-.order-notes { margin-left: 6px; cursor: help; }
+.order-notes { position: relative; margin-left: 6px; cursor: default; }
+.order-notes::after { content: attr(data-tooltip); position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); background: var(--bg-elevated); border: 1px solid var(--border-light); color: var(--text-primary); font-size: 12px; padding: 6px 10px; border-radius: var(--radius); width: max-content; max-width: 260px; white-space: normal; box-shadow: var(--shadow-lg); pointer-events: none; opacity: 0; transition: opacity 0.1s; z-index: 9999; }
+.order-notes:hover::after { opacity: 1; }
 .date-cell { color: var(--text-secondary); font-size: 13px; }
 
 .company-badge {

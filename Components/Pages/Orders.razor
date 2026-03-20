@@ -79,7 +79,7 @@ else
                             <span class="store-name">@order.Store</span>
                             @if (!string.IsNullOrEmpty(order.Notes))
                             {
-                                <span class="order-notes" title="@order.Notes">💬</span>
+                                <span class="order-notes" data-tooltip="@order.Notes">💬</span>
                             }
                         </td>
                         <td class="date-cell">@order.PurchaseDate.ToString("dd/MM/yyyy")</td>
