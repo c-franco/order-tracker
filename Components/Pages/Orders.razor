@@ -3,6 +3,8 @@
 @using OrderTracker.Models
 @inject OrderService OrderSvc
 @inject CarrierService CarrierSvc
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 <PageTitle>📦 Order Tracker — Pedidos</PageTitle>
@@ -427,6 +429,29 @@ else
     }
 
     private int? openDropdownId = null;
+    private DotNetObjectReference<Orders>? _selfRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("registerDropdownClose", _selfRef);
+        }
+    }
+
+    [JSInvokable]
+    public void CloseDropdown()
+    {
+        openDropdownId = null;
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await JS.InvokeVoidAsync("unregisterDropdownClose");
+        _selfRef?.Dispose();
+    }
     private double dropdownTop = 0;
     private double dropdownLeft = 0;
 

@@ -15,6 +15,21 @@
 <body>
     <Routes />
     <script src="_framework/blazor.server.js"></script>
+    <script>
+        let _dropdownRef = null;
+        function _onDocClick(e) {
+            if (e.target.closest('.custom-dropdown')) return;
+            if (_dropdownRef) _dropdownRef.invokeMethodAsync('CloseDropdown');
+        }
+        function registerDropdownClose(ref) {
+            _dropdownRef = ref;
+            document.addEventListener('click', _onDocClick);
+        }
+        function unregisterDropdownClose() {
+            document.removeEventListener('click', _onDocClick);
+            _dropdownRef = null;
+        }
+    </script>
 </body>
 
 </html>
