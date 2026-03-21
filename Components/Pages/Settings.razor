@@ -2,8 +2,6 @@
 @using OrderTracker.Services
 @using OrderTracker.Models
 @inject CarrierService CarrierSvc
-@inject OrderService OrderSvc
-@inject IJSRuntime JS
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 <PageTitle>📦 Order Tracker — Ajustes</PageTitle>
@@ -75,86 +73,10 @@
             </div>
         }
     </div>
-    <div class="settings-section">
-        <div class="settings-section-header">
-            <div>
-                <h2 class="settings-section-title">Datos</h2>
-                <p class="settings-section-desc">Exporta todos tus pedidos a CSV o importa pedidos desde un archivo CSV exportado previamente.</p>
-            </div>
-        </div>
-        <div class="data-actions">
-            <button class="btn btn-secondary" @onclick="ExportCsv" disabled="@exporting">
-                @(exporting ? "Exportando..." : "↓ Exportar CSV")
-            </button>
-            <button class="btn btn-secondary" @onclick="() => showImportModal = true">↑ Importar CSV</button>
-        </div>
-    </div>
-
 </div>
-
-@if (showImportModal)
-{
-    <div class="modal-overlay" @onclick="() => { showImportModal = false; importResult = null; }">
-        <div class="modal-panel modal-sm" @onclick:stopPropagation="true">
-            <div class="modal-header">
-                <h2 class="modal-title">Importar CSV</h2>
-                <button class="modal-close" @onclick="() => { showImportModal = false; importResult = null; }">✕</button>
-            </div>
-            <div class="modal-body">
-                @if (importResult == null)
-                {
-                    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 16px;">
-                        Selecciona un archivo CSV exportado previamente desde esta aplicación.
-                        Los pedidos se añadirán sin reemplazar los existentes.
-                    </p>
-                    <InputFile class="form-input" accept=".csv" OnChange="HandleImportFile" />
-                    @if (!string.IsNullOrEmpty(importError))
-                    {
-                        <div class="form-error" style="margin-top: 12px;">@importError</div>
-                    }
-                    @if (importing)
-                    {
-                        <div class="loading-state" style="padding: 16px 0;">Importando...</div>
-                    }
-                }
-                else
-                {
-                    <div class="import-result">
-                        <div class="import-stat @(importResult.Value.imported > 0 ? "import-ok" : "")">
-                            ✓ @importResult.Value.imported pedido@(importResult.Value.imported != 1 ? "s" : "") importado@(importResult.Value.imported != 1 ? "s" : "")
-                        </div>
-                        @if (importResult.Value.skipped > 0)
-                        {
-                            <div class="import-stat import-warn">
-                                ⚠ @importResult.Value.skipped fila@(importResult.Value.skipped != 1 ? "s" : "") omitida@(importResult.Value.skipped != 1 ? "s" : "")
-                            </div>
-                        }
-                        @if (importResult.Value.errors.Any())
-                        {
-                            <div class="import-errors">
-                                @foreach (var err in importResult.Value.errors)
-                                {
-                                    <div class="import-error-line">@err</div>
-                                }
-                            </div>
-                        }
-                    </div>
-                }
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-ghost" @onclick="() => { showImportModal = false; importResult = null; }">Cerrar</button>
-            </div>
-        </div>
-    </div>
-}
 
 @code {
     private List<Carrier> carriers = new();
-    private bool exporting = false;
-    private bool showImportModal = false;
-    private bool importing = false;
-    private string importError = "";
-    private (int imported, int skipped, List<string> errors)? importResult = null;
     private bool loading = true;
     private bool saving = false;
     private string saveMessage = "";
@@ -195,38 +117,5 @@
         }
 
         saving = false;
-    }
-
-    private async Task ExportCsv()
-    {
-        exporting = true;
-        var csv = await OrderSvc.ExportToCsvAsync();
-        var bytes = System.Text.Encoding.UTF8.GetBytes(csv);
-        var base64 = Convert.ToBase64String(bytes);
-        var filename = $"pedidos_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-        await JS.InvokeVoidAsync("downloadFile", filename, "text/csv;charset=utf-8;", base64);
-        exporting = false;
-    }
-
-    private async Task HandleImportFile(InputFileChangeEventArgs e)
-    {
-        importError = "";
-        importing = true;
-        importResult = null;
-
-        try
-        {
-            using var stream = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
-            using var reader = new System.IO.StreamReader(stream, System.Text.Encoding.UTF8);
-            var csv = await reader.ReadToEndAsync();
-            var carriers = await CarrierSvc.GetAllAsync();
-            importResult = await OrderSvc.ImportFromCsvAsync(csv, carriers);
-        }
-        catch (Exception ex)
-        {
-            importError = "Error al leer el archivo: " + ex.Message;
-        }
-
-        importing = false;
     }
 }

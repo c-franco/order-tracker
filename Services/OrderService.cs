@@ -120,6 +120,7 @@ public class OrderService
     public async Task<DashboardMetrics> GetMetricsAsync()
     {
         var orders = await _db.Orders.Where(o => !o.IsDeleted).ToListAsync();
+        var now = DateTime.Now;
 
         return new DashboardMetrics
         {
@@ -137,151 +138,8 @@ public class OrderService
         };
     }
 
-    public async Task<string> ExportToCsvAsync()
-    {
-        var orders = await _db.Orders
-            .Include(o => o.Carrier)
-            .Include(o => o.Items)
-            .Where(o => !o.IsDeleted)
-            .OrderByDescending(o => o.PurchaseDate)
-            .ToListAsync();
-
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine("Id,Tienda,Fecha compra,Transportista,Codigo envio,Estado,Entrega estimada,Total,Notas,Productos");
-
-        foreach (var order in orders)
-        {
-            var productos = string.Join(" | ", order.Items.Select(i => $"{i.ProductName} x{i.Quantity} ({i.UnitPrice:N2}EUR)"));
-            sb.AppendLine(string.Join(",",
-                order.Id,
-                Escape(order.Store),
-                order.PurchaseDate.ToString("dd/MM/yyyy"),
-                Escape(order.Carrier?.Name ?? ""),
-                Escape(order.TrackingCode ?? ""),
-                Escape(GetStatusLabel(order.Status)),
-                order.EstimatedDelivery?.ToString("dd/MM/yyyy") ?? "",
-                order.TotalPrice.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
-                Escape(order.Notes ?? ""),
-                Escape(productos)
-            ));
-        }
-
-        return sb.ToString();
-    }
-
-    private static string Escape(string value)
-    {
-        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
-            return "\"" + value.Replace("\"", "\"\"") + "\"";
-        return value;
-    }
-
-    private static string GetStatusLabel(OrderStatus status) => status switch
-    {
-        OrderStatus.Comprado => "Comprado",
-        OrderStatus.Enviado => "Enviado",
-        OrderStatus.EnReparto => "En reparto",
-        OrderStatus.Incidencia => "Incidencia",
-        OrderStatus.Recibido => "Recibido",
-        OrderStatus.Cancelado => "Cancelado",
-        _ => status.ToString()
-    };
-
     private static void RecalculateTotal(Order order)
     {
         order.TotalPrice = order.Items.Sum(i => i.Quantity * i.UnitPrice);
     }
-    public async Task<(int imported, int skipped, List<string> errors)> ImportFromCsvAsync(string csvContent, List<Carrier> carriers)
-    {
-        var lines = csvContent.Replace("\r\n", "\n").Replace("\r", "\n").Split('\n', StringSplitOptions.RemoveEmptyEntries).ToList();
-        if (lines.Count < 2)
-            return (0, 0, new List<string> { "El archivo CSV no contiene datos." });
-
-        int imported = 0, skipped = 0;
-        var errors = new List<string>();
-        var carrierMap = carriers.ToDictionary(c => c.Name.ToLower(), c => c.Id);
-
-        for (int i = 1; i < lines.Count; i++)
-        {
-            try
-            {
-                var cols = ParseCsvLine(lines[i]);
-                if (cols.Count < 9) { skipped++; continue; }
-
-                var order = new Order
-                {
-                    Store = cols[1],
-                    PurchaseDate = DateTime.TryParseExact(cols[2], "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out var pd) ? pd : DateTime.Today,
-                    TrackingCode = string.IsNullOrWhiteSpace(cols[4]) ? null : cols[4],
-                    Status = ParseStatus(cols[5]),
-                    EstimatedDelivery = DateTime.TryParseExact(cols[6], "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out var ed) ? ed : null,
-                    TotalPrice = decimal.TryParse(cols[7].Replace(",", "."), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var tp) ? tp : 0,
-                    Notes = string.IsNullOrWhiteSpace(cols[8]) ? null : cols[8],
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
-                };
-
-                var carrierName = cols[3].ToLower();
-                if (!string.IsNullOrWhiteSpace(carrierName) && carrierMap.TryGetValue(carrierName, out var carrierId))
-                    order.CarrierId = carrierId;
-
-                if (!string.IsNullOrWhiteSpace(order.TrackingCode) && order.CarrierId.HasValue)
-                {
-                    var carrier = carriers.FirstOrDefault(c => c.Id == order.CarrierId);
-                    if (carrier != null)
-                        order.TrackingUrl = new CarrierService(_db).GetTrackingUrl(carrier, order.TrackingCode);
-                }
-
-                _db.Orders.Add(order);
-                imported++;
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"Línea {i + 1}: {ex.Message}");
-                skipped++;
-            }
-        }
-
-        if (imported > 0)
-            await _db.SaveChangesAsync();
-
-        return (imported, skipped, errors);
-    }
-
-    private static List<string> ParseCsvLine(string line)
-    {
-        var result = new List<string>();
-        bool inQuotes = false;
-        var current = new System.Text.StringBuilder();
-
-        for (int i = 0; i < line.Length; i++)
-        {
-            char c = line[i];
-            if (c == '"')
-            {
-                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
-                { current.Append('"'); i++; }
-                else
-                    inQuotes = !inQuotes;
-            }
-            else if (c == ',' && !inQuotes)
-            { result.Add(current.ToString()); current.Clear(); }
-            else
-                current.Append(c);
-        }
-        result.Add(current.ToString());
-        return result;
-    }
-
-    private static OrderStatus ParseStatus(string value) => value.Trim().ToLower() switch
-    {
-        "comprado" => OrderStatus.Comprado,
-        "enviado" => OrderStatus.Enviado,
-        "en reparto" => OrderStatus.EnReparto,
-        "incidencia" => OrderStatus.Incidencia,
-        "recibido" => OrderStatus.Recibido,
-        "cancelado" => OrderStatus.Cancelado,
-        _ => OrderStatus.Comprado
-    };
-
 }

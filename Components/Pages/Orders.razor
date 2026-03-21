@@ -74,7 +74,7 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var order in filteredOrders)
+                @foreach (var order in PagedOrders)
                 {
                     <tr class="order-row order-row-@order.Status.ToString().ToLower()">
                         <td>
@@ -151,11 +151,21 @@ else
         </table>
         <div class="table-footer">
             <span>@filteredOrders.Count pedido@(filteredOrders.Count != 1 ? "s" : "") · Total: <strong>@filteredOrders.Sum(o => o.TotalPrice).ToString("N2")€</strong></span>
+            @if (TotalPages > 1)
+            {
+                <div class="pagination">
+                    <button class="page-btn" @onclick="PrevPage" disabled="@(currentPage == 1)">‹</button>
+                    @for (int p = 1; p <= TotalPages; p++)
+                    {
+                        var pageNum = p;
+                        <button class="page-btn @(pageNum == currentPage ? "active" : "")" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+                    }
+                    <button class="page-btn" @onclick="NextPage" disabled="@(currentPage == TotalPages)">›</button>
+                </div>
+            }
         </div>
     </div>
 }
-
-
 
 <!-- Order Modal -->
 @if (showModal)
@@ -347,6 +357,7 @@ else
         };
 
         filteredOrders = q.ToList();
+        currentPage = 1;
     }
 
     private void OpenCreateModal()
@@ -431,6 +442,15 @@ else
     }
 
     private int? openDropdownId = null;
+    private int currentPage = 1;
+    private const int PageSize = 10;
+
+    private int TotalPages => (int)Math.Ceiling(filteredOrders.Count / (double)PageSize);
+    private List<Order> PagedOrders => filteredOrders.Skip((currentPage - 1) * PageSize).Take(PageSize).ToList();
+
+    private void GoToPage(int page) { currentPage = page; openDropdownId = null; }
+    private void PrevPage() { if (currentPage > 1) currentPage--; }
+    private void NextPage() { if (currentPage < TotalPages) currentPage++; }
     private DotNetObjectReference<Orders>? _selfRef;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

@@ -171,17 +171,6 @@ a:hover { color: var(--accent-hover); }
   letter-spacing: -0.5px;
 }
 
-.header-actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-@media (max-width: 768px) {
-  .header-actions { width: 100%; }
-  .header-actions .btn { flex: 1; justify-content: center; }
-}
-
 .page-subtitle {
   color: var(--text-secondary);
   font-size: 13px;
@@ -452,12 +441,43 @@ a:hover { color: var(--accent-hover); }
 
 .action-btns { display: flex; gap: 6px; }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: var(--sans);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.page-btn:disabled { opacity: 0.3; cursor: default; }
+
 .table-footer {
-  padding: 12px 16px;
+  padding: 10px 16px;
   background: var(--bg-elevated);
   border-top: 1px solid var(--border);
   color: var(--text-secondary);
   font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 /* ── Status Select & Badges ── */
@@ -1045,39 +1065,4 @@ a:hover { color: var(--accent-hover); }
 
   .carriers-table th:nth-child(2),
   .carriers-table td:nth-child(2) { display: none; }
-}
-
-/* ── Import result ── */
-.import-result { display: flex; flex-direction: column; gap: 10px; }
-
-.import-stat {
-    padding: 10px 14px;
-    border-radius: var(--radius);
-    font-size: 13px;
-    font-weight: 500;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-}
-
-.import-ok { background: rgba(62,207,142,0.08); border-color: rgba(62,207,142,0.3); color: var(--success); }
-.import-warn { background: rgba(245,166,35,0.08); border-color: rgba(245,166,35,0.3); color: var(--warning); }
-
-.import-errors {
-    background: rgba(240,68,56,0.06);
-    border: 1px solid rgba(240,68,56,0.2);
-    border-radius: var(--radius);
-    padding: 10px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.import-error-line { font-size: 12px; color: var(--danger); }
-
-/* ── Settings data actions ── */
-.data-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
 }
