@@ -504,11 +504,15 @@ a:hover { color: var(--accent-hover); }
   border-top: 1px solid var(--border);
   color: var(--text-secondary);
   font-size: 13px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
+
+.table-footer > span { justify-self: start; }
+.table-footer .pagination { justify-self: center; }
+.table-footer .page-size-wrap { justify-self: end; }
 
 /* ── Status Select & Badges ── */
 .status-select {

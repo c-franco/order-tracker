@@ -151,6 +151,18 @@ else
         </table>
         <div class="table-footer">
             <span>@filteredOrders.Count pedido@(filteredOrders.Count != 1 ? "s" : "") · Total: <strong>@filteredOrders.Sum(o => o.TotalPrice).ToString("N2")€</strong></span>
+            <div class="pagination">
+                @if (TotalPages > 1)
+                {
+                    <button class="page-btn" @onclick="PrevPage" disabled="@(currentPage == 1)">‹</button>
+                    @for (int p = 1; p <= TotalPages; p++)
+                    {
+                        var pageNum = p;
+                        <button class="page-btn @(pageNum == currentPage ? "active" : "")" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+                    }
+                    <button class="page-btn" @onclick="NextPage" disabled="@(currentPage == TotalPages)">›</button>
+                }
+            </div>
             <div class="page-size-wrap">
                 <span class="page-size-label">Pedidos por página</span>
                 <div class="custom-dropdown @(pageSizeDropdownOpen ? "open" : "")">
@@ -169,18 +181,6 @@ else
                     }
                 </div>
             </div>
-            @if (TotalPages > 1)
-            {
-                <div class="pagination">
-                    <button class="page-btn" @onclick="PrevPage" disabled="@(currentPage == 1)">‹</button>
-                    @for (int p = 1; p <= TotalPages; p++)
-                    {
-                        var pageNum = p;
-                        <button class="page-btn @(pageNum == currentPage ? "active" : "")" @onclick="() => GoToPage(pageNum)">@pageNum</button>
-                    }
-                    <button class="page-btn" @onclick="NextPage" disabled="@(currentPage == TotalPages)">›</button>
-                </div>
-            }
         </div>
     </div>
 }
