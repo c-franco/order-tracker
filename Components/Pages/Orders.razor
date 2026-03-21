@@ -151,6 +151,24 @@ else
         </table>
         <div class="table-footer">
             <span>@filteredOrders.Count pedido@(filteredOrders.Count != 1 ? "s" : "") · Total: <strong>@filteredOrders.Sum(o => o.TotalPrice).ToString("N2")€</strong></span>
+            <div class="page-size-wrap">
+                <span class="page-size-label">Pedidos por página</span>
+                <div class="custom-dropdown @(pageSizeDropdownOpen ? "open" : "")">
+                    <button class="page-size-btn" @onclick="() => pageSizeDropdownOpen = !pageSizeDropdownOpen" @onclick:stopPropagation="true">
+                        @pageSize ▾
+                    </button>
+                    @if (pageSizeDropdownOpen)
+                    {
+                        <div class="dropdown-menu dropdown-menu-up" style="bottom: calc(100% + 4px); top: auto; left: 0; position: absolute;" @onclick:stopPropagation="true">
+                            @foreach (var size in new[] { 10, 15, 20 })
+                            {
+                                var s = size;
+                                <div class="dropdown-item @(s == pageSize ? "active" : "")" @onclick="() => SetPageSize(s)">@s</div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
             @if (TotalPages > 1)
             {
                 <div class="pagination">
@@ -443,14 +461,24 @@ else
 
     private int? openDropdownId = null;
     private int currentPage = 1;
-    private const int PageSize = 10;
+    private int pageSize = 10;
 
-    private int TotalPages => (int)Math.Ceiling(filteredOrders.Count / (double)PageSize);
-    private List<Order> PagedOrders => filteredOrders.Skip((currentPage - 1) * PageSize).Take(PageSize).ToList();
+    private int TotalPages => (int)Math.Ceiling(filteredOrders.Count / (double)pageSize);
+    private List<Order> PagedOrders => filteredOrders.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
 
     private void GoToPage(int page) { currentPage = page; openDropdownId = null; }
     private void PrevPage() { if (currentPage > 1) currentPage--; }
     private void NextPage() { if (currentPage < TotalPages) currentPage++; }
+
+    private bool pageSizeDropdownOpen = false;
+
+    private async Task SetPageSize(int size)
+    {
+        pageSize = size;
+        currentPage = 1;
+        pageSizeDropdownOpen = false;
+        await JS.InvokeVoidAsync("localStorage.setItem", "orderPageSize", pageSize.ToString());
+    }
     private DotNetObjectReference<Orders>? _selfRef;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -459,6 +487,12 @@ else
         {
             _selfRef = DotNetObjectReference.Create(this);
             await JS.InvokeVoidAsync("registerDropdownClose", _selfRef);
+            var saved = await JS.InvokeAsync<string?>("localStorage.getItem", "orderPageSize");
+            if (saved != null && int.TryParse(saved, out var savedSize) && new[] { 10, 15, 20 }.Contains(savedSize))
+            {
+                pageSize = savedSize;
+                StateHasChanged();
+            }
         }
     }
 
@@ -466,6 +500,7 @@ else
     public void CloseDropdown()
     {
         openDropdownId = null;
+        pageSizeDropdownOpen = false;
         StateHasChanged();
     }
 

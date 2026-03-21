@@ -468,6 +468,36 @@ a:hover { color: var(--accent-hover); }
 .page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
 .page-btn:disabled { opacity: 0.3; cursor: default; }
 
+.page-size-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-size-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.page-size-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: var(--sans);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  white-space: nowrap;
+}
+.page-size-btn:hover { border-color: var(--accent); color: var(--accent); }
+
 .table-footer {
   padding: 10px 16px;
   background: var(--bg-elevated);

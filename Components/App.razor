@@ -18,7 +18,7 @@
     <script>
         let _dropdownRef = null;
         function _onDocClick(e) {
-            if (e.target.closest('.custom-dropdown')) return;
+            if (e.target.closest('.custom-dropdown') || e.target.closest('.page-size-btn')) return;
             if (_dropdownRef) _dropdownRef.invokeMethodAsync('CloseDropdown');
         }
         function registerDropdownClose(ref) {
