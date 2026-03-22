@@ -36,6 +36,8 @@ public class Order
 
     public DateTime? EstimatedDelivery { get; set; }
 
+    public DateTime? ReceivedDate { get; set; }
+
     [Column(TypeName = "decimal(18,2)")]
     public decimal TotalPrice { get; set; }
 

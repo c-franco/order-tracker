@@ -68,7 +68,7 @@ else
                     <th>Transportista</th>
                     <th>Código / Tracking</th>
                     <th>Estado</th>
-                    <th>Entrega estimada</th>
+                    <th>Entrega estimada / Recibido</th>
                     <th>Total</th>
                     <th>Acciones</th>
                 </tr>
@@ -127,7 +127,12 @@ else
                             </div>
                         </td>
                         <td class="@(IsDelayed(order) ? "delayed-date" : "")">
-                            @if (order.EstimatedDelivery.HasValue)
+                            @if (order.Status == OrderStatus.Recibido && order.ReceivedDate.HasValue)
+                            {
+                                <span class="received-date">@order.ReceivedDate.Value.ToString("dd/MM/yyyy")</span>
+                                <span class="days-badge" title="Días desde la compra">@((order.ReceivedDate.Value.Date - order.PurchaseDate.Date).Days)d</span>
+                            }
+                            else if (order.EstimatedDelivery.HasValue)
                             {
                                 @order.EstimatedDelivery.Value.ToString("dd/MM/yyyy")
                                 @if (IsDelayed(order)) { <span class="delay-badge">retrasado</span> }
@@ -220,6 +225,10 @@ else
                             <div class="form-group">
                                 <label class="form-label">Fecha estimada de llegada</label>
                                 <input class="form-input" type="date" @bind="editingOrder.EstimatedDelivery" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Fecha de recepción</label>
+                                <input class="form-input" type="date" @bind="editingOrder.ReceivedDate" />
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Transportista</label>
@@ -397,6 +406,7 @@ else
             TrackingUrl = order.TrackingUrl,
             Status = order.Status,
             EstimatedDelivery = order.EstimatedDelivery,
+            ReceivedDate = order.ReceivedDate,
             Notes = order.Notes,
             TotalPrice = order.TotalPrice,
             Items = order.Items.Select(i => new OrderItem

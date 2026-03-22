@@ -22,6 +22,7 @@ namespace OrderTracker.Migrations
                 b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
                 b.Property<DateTime>("CreatedAt").HasColumnType("TEXT");
                 b.Property<DateTime?>("EstimatedDelivery").HasColumnType("TEXT");
+                b.Property<DateTime?>("ReceivedDate").HasColumnType("TEXT");
                 b.Property<bool>("IsDeleted").HasColumnType("INTEGER");
                 b.Property<string>("Notes").HasMaxLength(500).HasColumnType("TEXT");
                 b.Property<DateTime>("PurchaseDate").HasColumnType("TEXT");

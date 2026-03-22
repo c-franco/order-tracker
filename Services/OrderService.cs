@@ -74,7 +74,10 @@ public class OrderService
         existing.TrackingCode = order.TrackingCode;
         existing.Status = order.Status;
         existing.EstimatedDelivery = order.EstimatedDelivery;
+        existing.ReceivedDate = order.ReceivedDate;
         existing.Notes = order.Notes;
+        if (order.Status == OrderStatus.Recibido && existing.ReceivedDate == null)
+            existing.ReceivedDate = DateTime.Today;
         existing.UpdatedAt = DateTime.Now;
 
         if (!string.IsNullOrWhiteSpace(order.TrackingCode) && string.IsNullOrWhiteSpace(order.TrackingUrl) && order.CarrierId.HasValue)
@@ -102,6 +105,8 @@ public class OrderService
 
         order.Status = status;
         order.UpdatedAt = DateTime.Now;
+        if (status == OrderStatus.Recibido && order.ReceivedDate == null)
+            order.ReceivedDate = DateTime.Today;
         await _db.SaveChangesAsync();
         return true;
     }
