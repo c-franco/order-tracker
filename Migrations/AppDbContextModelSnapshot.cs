@@ -37,6 +37,15 @@ namespace OrderTracker.Migrations
                 b.ToTable("Orders");
             });
 
+            modelBuilder.Entity("OrderTracker.Models.PaymentMethod", b =>
+            {
+                b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
+                b.Property<string>("Name").IsRequired().HasMaxLength(100).HasColumnType("TEXT");
+                b.Property<int>("SortOrder").HasColumnType("INTEGER");
+                b.HasKey("Id");
+                b.ToTable("PaymentMethods");
+            });
+
             modelBuilder.Entity("OrderTracker.Models.OrderItem", b =>
             {
                 b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
@@ -49,6 +58,15 @@ namespace OrderTracker.Migrations
                 b.ToTable("OrderItems");
             });
 
+            modelBuilder.Entity("OrderTracker.Models.PaymentMethod", b =>
+            {
+                b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
+                b.Property<string>("Name").IsRequired().HasMaxLength(100).HasColumnType("TEXT");
+                b.Property<int>("SortOrder").HasColumnType("INTEGER");
+                b.HasKey("Id");
+                b.ToTable("PaymentMethods");
+            });
+
             modelBuilder.Entity("OrderTracker.Models.OrderItem", b =>
             {
                 b.HasOne("OrderTracker.Models.Order", "Order")
@@ -57,6 +75,15 @@ namespace OrderTracker.Migrations
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();
                 b.Navigation("Order");
+            });
+
+            modelBuilder.Entity("OrderTracker.Models.Order", b =>
+            {
+                b.HasOne("OrderTracker.Models.PaymentMethod", "PaymentMethod")
+                    .WithMany()
+                    .HasForeignKey("PaymentMethodId")
+                    .OnDelete(DeleteBehavior.SetNull);
+                b.Navigation("PaymentMethod");
             });
 
             modelBuilder.Entity("OrderTracker.Models.Order", b =>

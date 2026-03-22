@@ -10,6 +10,7 @@ public class AppDbContext : DbContext
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<Carrier> Carriers { get; set; }
+    public DbSet<PaymentMethod> PaymentMethods { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -28,6 +29,10 @@ public class AppDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.CarrierId)
                   .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.PaymentMethod)
+                  .WithMany()
+                  .HasForeignKey(e => e.PaymentMethodId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<OrderItem>(entity =>
@@ -42,6 +47,22 @@ public class AppDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
         });
+
+        modelBuilder.Entity<PaymentMethod>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+        });
+
+        // Seed default payment methods
+        modelBuilder.Entity<PaymentMethod>().HasData(
+            new PaymentMethod { Id = 1, Name = "Tarjeta de crédito", SortOrder = 1 },
+            new PaymentMethod { Id = 2, Name = "Tarjeta de débito", SortOrder = 2 },
+            new PaymentMethod { Id = 3, Name = "PayPal", SortOrder = 3 },
+            new PaymentMethod { Id = 4, Name = "Bizum", SortOrder = 4 },
+            new PaymentMethod { Id = 5, Name = "Transferencia", SortOrder = 5 },
+            new PaymentMethod { Id = 6, Name = "Contra reembolso", SortOrder = 6 }
+        );
 
         // Seed default carriers
         modelBuilder.Entity<Carrier>().HasData(

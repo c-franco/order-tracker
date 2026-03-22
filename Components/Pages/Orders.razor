@@ -3,6 +3,7 @@
 @using OrderTracker.Models
 @inject OrderService OrderSvc
 @inject CarrierService CarrierSvc
+@inject PaymentMethodService PaymentMethodSvc
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
@@ -224,7 +225,13 @@ else
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Método de pago</label>
-                                <input class="form-input" @bind="editingOrder.PaymentMethod" placeholder="Tarjeta, PayPal, Bizum..." />
+                                <select class="form-select" @bind="editingOrder.PaymentMethodId">
+                                    <option value="">— Sin método —</option>
+                                    @foreach (var pm in paymentMethods)
+                                    {
+                                        <option value="@pm.Id">@pm.Name</option>
+                                    }
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Fecha estimada de llegada</label>
@@ -341,6 +348,7 @@ else
     private List<Order> allOrders = new();
     private List<Order> filteredOrders = new();
     private List<Carrier> carriers = new();
+    private List<OrderTracker.Models.PaymentMethod> paymentMethods = new();
     private bool loading = true;
     private string searchText = "";
     private string selectedStatus = "";
@@ -354,6 +362,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         carriers = await CarrierSvc.GetAllAsync();
+        paymentMethods = await PaymentMethodSvc.GetAllAsync();
         await LoadOrders();
     }
 
@@ -411,7 +420,7 @@ else
             Status = order.Status,
             EstimatedDelivery = order.EstimatedDelivery,
             ReceivedDate = order.ReceivedDate,
-            PaymentMethod = order.PaymentMethod,
+            PaymentMethodId = order.PaymentMethodId,
             Notes = order.Notes,
             TotalPrice = order.TotalPrice,
             Items = order.Items.Select(i => new OrderItem

@@ -21,6 +21,7 @@ public class OrderService
         var query = _db.Orders
             .Include(o => o.Items)
             .Include(o => o.Carrier)
+            .Include(o => o.PaymentMethod)
             .Where(o => !o.IsDeleted)
             .AsQueryable();
 
@@ -43,6 +44,7 @@ public class OrderService
         return await _db.Orders
             .Include(o => o.Items)
             .Include(o => o.Carrier)
+            .Include(o => o.PaymentMethod)
             .FirstOrDefaultAsync(o => o.Id == id && !o.IsDeleted);
     }
 
@@ -75,7 +77,7 @@ public class OrderService
         existing.Status = order.Status;
         existing.EstimatedDelivery = order.EstimatedDelivery;
         existing.ReceivedDate = order.ReceivedDate;
-        existing.PaymentMethod = order.PaymentMethod;
+        existing.PaymentMethodId = order.PaymentMethodId;
         existing.Notes = order.Notes;
         if (order.Status == OrderStatus.Recibido && existing.ReceivedDate == null)
             existing.ReceivedDate = DateTime.Today;

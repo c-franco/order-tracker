@@ -2,6 +2,7 @@
 @using OrderTracker.Services
 @using OrderTracker.Models
 @inject CarrierService CarrierSvc
+@inject PaymentMethodService PaymentMethodSvc
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 <PageTitle>📦 Order Tracker — Ajustes</PageTitle>
@@ -73,10 +74,64 @@
             </div>
         }
     </div>
+    <div class="settings-section">
+        <div class="settings-section-header">
+            <div>
+                <h2 class="settings-section-title">Métodos de pago</h2>
+                <p class="settings-section-desc">Gestiona las opciones de método de pago disponibles en los pedidos.</p>
+            </div>
+            <button class="btn btn-secondary" @onclick="AddPaymentMethod">+ Añadir método</button>
+        </div>
+
+        @if (loadingPm)
+        {
+            <div class="loading-state">Cargando métodos de pago...</div>
+        }
+        else
+        {
+            <div class="carriers-table-wrap">
+                <table class="carriers-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Orden</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var pm in paymentMethods)
+                        {
+                            <tr>
+                                <td><input class="form-input" @bind="pm.Name" placeholder="Nombre del método" /></td>
+                                <td><input class="form-input form-input-xs" type="number" min="0" @bind="pm.SortOrder" /></td>
+                                <td><button class="btn-icon btn-delete" @onclick="() => paymentMethods.Remove(pm)" title="Eliminar">✕</button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (!string.IsNullOrEmpty(savePmMessage))
+            {
+                <div class="save-message @(savePmError ? "save-error" : "save-success")">@savePmMessage</div>
+            }
+
+            <div class="settings-actions">
+                <button class="btn btn-primary" @onclick="SavePaymentMethods" disabled="@savingPm">
+                    @(savingPm ? "Guardando..." : "Guardar cambios")
+                </button>
+            </div>
+        }
+    </div>
 </div>
 
 @code {
     private List<Carrier> carriers = new();
+    private List<OrderTracker.Models.PaymentMethod> paymentMethods = new();
+    private bool loadingPm = true;
+    private bool savingPm = false;
+    private string savePmMessage = "";
+    private bool savePmError = false;
     private bool loading = true;
     private bool saving = false;
     private string saveMessage = "";
@@ -86,6 +141,8 @@
     {
         carriers = await CarrierSvc.GetAllAsync();
         loading = false;
+        paymentMethods = await PaymentMethodSvc.GetAllAsync();
+        loadingPm = false;
     }
 
     private void AddCarrier()
@@ -96,6 +153,33 @@
     private void RemoveCarrier(Carrier carrier)
     {
         carriers.Remove(carrier);
+    }
+
+    private void AddPaymentMethod()
+    {
+        paymentMethods.Add(new OrderTracker.Models.PaymentMethod
+        {
+            SortOrder = paymentMethods.Count > 0 ? paymentMethods.Max(p => p.SortOrder) + 1 : 1
+        });
+    }
+
+    private async Task SavePaymentMethods()
+    {
+        savingPm = true;
+        savePmMessage = "";
+        try
+        {
+            await PaymentMethodSvc.SaveAllAsync(paymentMethods);
+            savePmMessage = "✓ Cambios guardados correctamente.";
+            savePmError = false;
+            paymentMethods = await PaymentMethodSvc.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            savePmMessage = $"Error al guardar: {ex.Message}";
+            savePmError = true;
+        }
+        savingPm = false;
     }
 
     private async Task Save()

@@ -1202,3 +1202,21 @@ a:hover { color: var(--accent-hover); }
 @media (max-width: 600px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── Form dropdown button ── */
+.form-dropdown-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    text-align: left;
+    background: var(--bg-elevated);
+}
+
+.form-dropdown-btn:hover { border-color: var(--accent); }
+
+.form-dropdown-arrow {
+    font-size: 10px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
