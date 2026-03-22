@@ -223,6 +223,10 @@ else
                                 </select>
                             </div>
                             <div class="form-group">
+                                <label class="form-label">Método de pago</label>
+                                <input class="form-input" @bind="editingOrder.PaymentMethod" placeholder="Tarjeta, PayPal, Bizum..." />
+                            </div>
+                            <div class="form-group">
                                 <label class="form-label">Fecha estimada de llegada</label>
                                 <input class="form-input" type="date" @bind="editingOrder.EstimatedDelivery" />
                             </div>
@@ -407,6 +411,7 @@ else
             Status = order.Status,
             EstimatedDelivery = order.EstimatedDelivery,
             ReceivedDate = order.ReceivedDate,
+            PaymentMethod = order.PaymentMethod,
             Notes = order.Notes,
             TotalPrice = order.TotalPrice,
             Items = order.Items.Select(i => new OrderItem

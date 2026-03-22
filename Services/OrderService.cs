@@ -75,6 +75,7 @@ public class OrderService
         existing.Status = order.Status;
         existing.EstimatedDelivery = order.EstimatedDelivery;
         existing.ReceivedDate = order.ReceivedDate;
+        existing.PaymentMethod = order.PaymentMethod;
         existing.Notes = order.Notes;
         if (order.Status == OrderStatus.Recibido && existing.ReceivedDate == null)
             existing.ReceivedDate = DateTime.Today;

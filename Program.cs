@@ -21,6 +21,9 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+    // Apply any missing columns safely
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Orders ADD COLUMN ReceivedDate TEXT;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Orders ADD COLUMN PaymentMethod TEXT;"); } catch { }
 }
 
 if (!app.Environment.IsDevelopment())

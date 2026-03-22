@@ -41,6 +41,9 @@ public class Order
     [Column(TypeName = "decimal(18,2)")]
     public decimal TotalPrice { get; set; }
 
+    [MaxLength(100)]
+    public string? PaymentMethod { get; set; }
+
     [MaxLength(500)]
     public string? Notes { get; set; }
 
