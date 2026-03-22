@@ -143,6 +143,28 @@ public class OrderService
         };
     }
 
+    public async Task<List<CarrierDeliveryStats>> GetCarrierDeliveryStatsAsync()
+    {
+        var orders = await _db.Orders
+            .Include(o => o.Carrier)
+            .Where(o => !o.IsDeleted &&
+                        o.Status == OrderStatus.Recibido &&
+                        o.ReceivedDate.HasValue &&
+                        o.CarrierId.HasValue)
+            .ToListAsync();
+
+        return orders
+            .GroupBy(o => o.Carrier?.Name ?? "Desconocido")
+            .Select(g => new CarrierDeliveryStats
+            {
+                CarrierName = g.Key,
+                AvgDays = g.Average(o => (o.ReceivedDate!.Value.Date - o.PurchaseDate.Date).TotalDays),
+                OrderCount = g.Count()
+            })
+            .OrderBy(s => s.AvgDays)
+            .ToList();
+    }
+
     private static void RecalculateTotal(Order order)
     {
         order.TotalPrice = order.Items.Sum(i => i.Quantity * i.UnitPrice);

@@ -33,3 +33,10 @@ public class DashboardMetrics
     public decimal TotalSpent { get; set; }
     public int TotalOrders { get; set; }
 }
+
+public class CarrierDeliveryStats
+{
+    public string CarrierName { get; set; } = string.Empty;
+    public double AvgDays { get; set; }
+    public int OrderCount { get; set; }
+}

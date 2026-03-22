@@ -1,0 +1,192 @@
+@page "/statistics"
+@using OrderTracker.Services
+@using OrderTracker.DTOs
+@using OrderTracker.Models
+@inject OrderService OrderSvc
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>📦 Order Tracker — Estadísticas</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Estadísticas</h1>
+        <p class="page-subtitle">Análisis de tus pedidos</p>
+    </div>
+</div>
+
+@if (loading)
+{
+    <div class="loading-state">Cargando estadísticas...</div>
+}
+else
+{
+    <!-- Resumen general -->
+    <div class="stats-section">
+        <h2 class="stats-section-title">Resumen general</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-value">@totalOrders</span>
+                <span class="stat-label">Total pedidos</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">@totalSpent.ToString("N2")€</span>
+                <span class="stat-label">Total gastado</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">@avgOrderValue.ToString("N2")€</span>
+                <span class="stat-label">Ticket medio</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">@receivedOrders</span>
+                <span class="stat-label">Pedidos recibidos</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">@cancelledOrders</span>
+                <span class="stat-label">Cancelados</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">@(avgDeliveryDays > 0 ? avgDeliveryDays.ToString("N1") + " días" : "—")</span>
+                <span class="stat-label">Entrega media</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tiempo medio por transportista -->
+    <div class="stats-section">
+        <h2 class="stats-section-title">Tiempo medio de entrega por transportista</h2>
+        <div class="section-card">
+            @if (!carrierStats.Any())
+            {
+                <div class="empty-state-small">Sin datos. Aparecerá cuando haya pedidos recibidos con fecha de recepción.</div>
+            }
+            else
+            {
+                <div class="carrier-stats">
+                    @foreach (var stat in carrierStats)
+                    {
+                        var maxDays = carrierStats.Max(s => s.AvgDays);
+                        <div class="carrier-stat-row">
+                            <span class="carrier-stat-name">@stat.CarrierName</span>
+                            <div class="carrier-stat-bar-wrap">
+                                <div class="carrier-stat-bar" style="width: @(maxDays > 0 ? (stat.AvgDays / maxDays * 100) : 0)%"></div>
+                            </div>
+                            <span class="carrier-stat-days">@stat.AvgDays.ToString("N1") días</span>
+                            <span class="carrier-stat-count">@stat.OrderCount pedido@(stat.OrderCount != 1 ? "s" : "")</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Por estado -->
+    <div class="stats-section">
+        <h2 class="stats-section-title">Pedidos por estado</h2>
+        <div class="section-card">
+            <div class="status-breakdown">
+                @foreach (var group in statusBreakdown)
+                {
+                    <div class="status-breakdown-row">
+                        <span class="status-badge status-@group.Key.ToString().ToLower()">@GetStatusLabel(group.Key)</span>
+                        <div class="status-bar-wrap">
+                            <div class="status-bar" style="width: @(totalOrders > 0 ? (group.Value * 100 / totalOrders) : 0)%"></div>
+                        </div>
+                        <span class="status-count">@group.Value</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Por tienda -->
+    <div class="stats-section">
+        <h2 class="stats-section-title">Pedidos por tienda</h2>
+        <div class="section-card">
+            @if (!storeStats.Any())
+            {
+                <div class="empty-state-small">Sin datos.</div>
+            }
+            else
+            {
+                <div class="carrier-stats">
+                    @foreach (var store in storeStats)
+                    {
+                        var maxCount = storeStats.Max(s => s.Value);
+                        <div class="carrier-stat-row">
+                            <span class="carrier-stat-name">@store.Key</span>
+                            <div class="carrier-stat-bar-wrap">
+                                <div class="carrier-stat-bar" style="width: @(maxCount > 0 ? (store.Value * 100.0 / maxCount) : 0)%"></div>
+                            </div>
+                            <span class="carrier-stat-days">@store.Value pedido@(store.Value != 1 ? "s" : "")</span>
+                            <span class="carrier-stat-count">@storeSpent[store.Key].ToString("N2")€</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private bool loading = true;
+    private int totalOrders;
+    private int receivedOrders;
+    private int cancelledOrders;
+    private decimal totalSpent;
+    private decimal avgOrderValue;
+    private double avgDeliveryDays;
+    private List<CarrierDeliveryStats> carrierStats = new();
+    private Dictionary<OrderStatus, int> statusBreakdown = new();
+    private Dictionary<string, int> storeStats = new();
+    private Dictionary<string, decimal> storeSpent = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var all = await OrderSvc.GetAllAsync();
+
+        totalOrders = all.Count;
+        receivedOrders = all.Count(o => o.Status == OrderStatus.Recibido);
+        cancelledOrders = all.Count(o => o.Status == OrderStatus.Cancelado);
+        totalSpent = all.Where(o => o.Status != OrderStatus.Cancelado).Sum(o => o.TotalPrice);
+        avgOrderValue = totalOrders > 0 ? all.Where(o => o.Status != OrderStatus.Cancelado).Average(o => o.TotalPrice) : 0;
+
+        var withDelivery = all.Where(o => o.Status == OrderStatus.Recibido && o.ReceivedDate.HasValue).ToList();
+        avgDeliveryDays = withDelivery.Any()
+            ? withDelivery.Average(o => (o.ReceivedDate!.Value.Date - o.PurchaseDate.Date).TotalDays)
+            : 0;
+
+        carrierStats = await OrderSvc.GetCarrierDeliveryStatsAsync();
+
+        statusBreakdown = all
+            .GroupBy(o => o.Status)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        storeStats = all
+            .GroupBy(o => o.Store)
+            .OrderByDescending(g => g.Count())
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        storeSpent = all
+            .Where(o => o.Status != OrderStatus.Cancelado)
+            .GroupBy(o => o.Store)
+            .ToDictionary(g => g.Key, g => g.Sum(o => o.TotalPrice));
+
+        // Ensure all stores have a spent entry
+        foreach (var store in storeStats.Keys)
+            if (!storeSpent.ContainsKey(store))
+                storeSpent[store] = 0;
+
+        loading = false;
+    }
+
+    private string GetStatusLabel(OrderStatus status) => status switch
+    {
+        OrderStatus.Comprado => "Comprado",
+        OrderStatus.Enviado => "Enviado",
+        OrderStatus.EnReparto => "En reparto",
+        OrderStatus.Incidencia => "Incidencia",
+        OrderStatus.Recibido => "Recibido",
+        OrderStatus.Cancelado => "Cancelado",
+        _ => status.ToString()
+    };
+}
