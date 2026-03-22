@@ -172,4 +172,161 @@ public class OrderService
     {
         order.TotalPrice = order.Items.Sum(i => i.Quantity * i.UnitPrice);
     }
+    public async Task<string> ExportToCsvAsync()
+    {
+        var orders = await _db.Orders
+            .Include(o => o.Carrier)
+            .Include(o => o.PaymentMethod)
+            .Include(o => o.Items)
+            .Where(o => !o.IsDeleted)
+            .OrderByDescending(o => o.PurchaseDate)
+            .ToListAsync();
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Tienda,FechaCompra,Transportista,CodigoEnvio,UrlSeguimiento,Estado,EntregaEstimada,FechaRecepcion,Total,MetodoPago,Notas,Productos");
+
+        foreach (var order in orders)
+        {
+            var productos = string.Join(" | ", order.Items.Select(i =>
+                i.ProductName + " x" + i.Quantity + " (" + i.UnitPrice.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + "EUR)"));
+
+            sb.AppendLine(string.Join(",",
+                Escape(order.Store),
+                order.PurchaseDate.ToString("dd/MM/yyyy"),
+                Escape(order.Carrier?.Name ?? ""),
+                Escape(order.TrackingCode ?? ""),
+                Escape(order.TrackingUrl ?? ""),
+                Escape(GetStatusLabel(order.Status)),
+                order.EstimatedDelivery?.ToString("dd/MM/yyyy") ?? "",
+                order.ReceivedDate?.ToString("dd/MM/yyyy") ?? "",
+                order.TotalPrice.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
+                Escape(order.PaymentMethod?.Name ?? ""),
+                Escape(order.Notes ?? ""),
+                Escape(productos)
+            ));
+        }
+
+        return sb.ToString();
+    }
+
+    public async Task<(int imported, int skipped, List<string> errors)> ImportFromCsvAsync(
+        string csvContent, List<Carrier> carriers, List<OrderTracker.Models.PaymentMethod> paymentMethods)
+    {
+        var lines = csvContent.Replace("\r\n", "\n").Replace("\r", "\n")
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries).ToList();
+
+        if (lines.Count < 2)
+            return (0, 0, new List<string> { "El archivo CSV no contiene datos." });
+
+        int imported = 0, skipped = 0;
+        var errors = new List<string>();
+        var carrierMap = carriers.ToDictionary(c => c.Name.ToLower(), c => c);
+        var pmMap = paymentMethods.ToDictionary(p => p.Name.ToLower(), p => p.Id);
+
+        for (int i = 1; i < lines.Count; i++)
+        {
+            try
+            {
+                var cols = ParseCsvLine(lines[i]);
+                if (cols.Count < 11) { skipped++; continue; }
+
+                var order = new Order
+                {
+                    Store = cols[0],
+                    PurchaseDate = DateTime.TryParseExact(cols[1], "dd/MM/yyyy", null,
+                        System.Globalization.DateTimeStyles.None, out var pd) ? pd : DateTime.Today,
+                    TrackingCode = string.IsNullOrWhiteSpace(cols[3]) ? null : cols[3],
+                    TrackingUrl = string.IsNullOrWhiteSpace(cols[4]) ? null : cols[4],
+                    Status = ParseStatus(cols[5]),
+                    EstimatedDelivery = DateTime.TryParseExact(cols[6], "dd/MM/yyyy", null,
+                        System.Globalization.DateTimeStyles.None, out var ed) ? ed : (DateTime?)null,
+                    ReceivedDate = DateTime.TryParseExact(cols[7], "dd/MM/yyyy", null,
+                        System.Globalization.DateTimeStyles.None, out var rd) ? rd : (DateTime?)null,
+                    TotalPrice = decimal.TryParse(cols[8].Replace(",", "."),
+                        System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture, out var tp) ? tp : 0,
+                    Notes = string.IsNullOrWhiteSpace(cols[10]) ? null : cols[10],
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                };
+
+                var carrierName = cols[2].ToLower();
+                if (!string.IsNullOrWhiteSpace(carrierName) && carrierMap.TryGetValue(carrierName, out var carrier))
+                {
+                    order.CarrierId = carrier.Id;
+                    if (string.IsNullOrWhiteSpace(order.TrackingUrl) && !string.IsNullOrWhiteSpace(order.TrackingCode))
+                        order.TrackingUrl = new CarrierService(_db).GetTrackingUrl(carrier, order.TrackingCode);
+                }
+
+                var pmName = cols[9].ToLower();
+                if (!string.IsNullOrWhiteSpace(pmName) && pmMap.TryGetValue(pmName, out var pmId))
+                    order.PaymentMethodId = pmId;
+
+                _db.Orders.Add(order);
+                imported++;
+            }
+            catch (Exception ex)
+            {
+                errors.Add("Línea " + (i + 1) + ": " + ex.Message);
+                skipped++;
+            }
+        }
+
+        if (imported > 0)
+            await _db.SaveChangesAsync();
+
+        return (imported, skipped, errors);
+    }
+
+    private static string Escape(string value)
+    {
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        return value;
+    }
+
+    private static string GetStatusLabel(OrderStatus status) => status switch
+    {
+        OrderStatus.Comprado => "Comprado",
+        OrderStatus.Enviado => "Enviado",
+        OrderStatus.EnReparto => "En reparto",
+        OrderStatus.Incidencia => "Incidencia",
+        OrderStatus.Recibido => "Recibido",
+        OrderStatus.Cancelado => "Cancelado",
+        _ => status.ToString()
+    };
+
+    private static List<string> ParseCsvLine(string line)
+    {
+        var result = new List<string>();
+        bool inQuotes = false;
+        var current = new System.Text.StringBuilder();
+        for (int i = 0; i < line.Length; i++)
+        {
+            char c = line[i];
+            if (c == '"')
+            {
+                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                { current.Append('"'); i++; }
+                else inQuotes = !inQuotes;
+            }
+            else if (c == ',' && !inQuotes)
+            { result.Add(current.ToString()); current.Clear(); }
+            else current.Append(c);
+        }
+        result.Add(current.ToString());
+        return result;
+    }
+
+    private static OrderStatus ParseStatus(string value) => value.Trim().ToLower() switch
+    {
+        "comprado" => OrderStatus.Comprado,
+        "enviado" => OrderStatus.Enviado,
+        "en reparto" => OrderStatus.EnReparto,
+        "incidencia" => OrderStatus.Incidencia,
+        "recibido" => OrderStatus.Recibido,
+        "cancelado" => OrderStatus.Cancelado,
+        _ => OrderStatus.Comprado
+    };
+
 }
