@@ -156,7 +156,7 @@ else
             </tbody>
         </table>
         <div class="table-footer">
-            <span>@filteredOrders.Count pedido@(filteredOrders.Count != 1 ? "s" : "") · Total: <strong>@filteredOrders.Sum(o => o.TotalPrice).ToString("N2")€</strong></span>
+            <span>@((currentPage - 1) * pageSize + 1)–@(Math.Min(currentPage * pageSize, filteredOrders.Count)) de @filteredOrders.Count pedido@(filteredOrders.Count != 1 ? "s" : "")</span>
             <div class="pagination">
                 @if (TotalPages > 1)
                 {
