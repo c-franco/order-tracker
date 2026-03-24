@@ -351,7 +351,7 @@ a:hover { color: var(--accent-hover); }
     text-align: right;
     white-space: nowrap;
 }
-.status-breakdown-row { display: grid; grid-template-columns: 120px 1fr 32px; align-items: center; gap: 12px; }
+.status-breakdown-row { display: grid; grid-template-columns: 140px 1fr 32px; align-items: center; gap: 12px; }
 .status-bar-wrap { background: var(--bg-elevated); border-radius: 3px; height: 6px; }
 .status-bar { height: 6px; border-radius: 3px; background: var(--accent); transition: width 0.3s; }
 .status-count { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); text-align: right; }
@@ -1114,6 +1114,10 @@ a:hover { color: var(--accent-hover); }
   .settings-section-header { flex-direction: column; align-items: flex-start; }
 }
 
+  /* Stats en tablet */
+  .carrier-stat-row { grid-template-columns: 130px 1fr 70px 80px; gap: 10px; }
+  .status-breakdown-row { grid-template-columns: 130px 1fr 28px; }
+
 /* ── Móvil (≤ 480px) ── */
 .btn-track { color: var(--text-secondary); display: none; }
 .btn-track:hover { border-color: var(--info); color: var(--info); background: rgba(56,189,248,0.08); }
@@ -1144,8 +1148,14 @@ a:hover { color: var(--accent-hover); }
   .order-preview-row { grid-template-columns: 1fr 90px; gap: 8px; }
   .order-preview-date, .order-preview-price { display: none; }
 
-  .status-breakdown-row { grid-template-columns: 100px 1fr 28px; }
-
+  /* Stats en móvil: ocultar barras, layout simplificado */
+  .carrier-stat-row { grid-template-columns: 1fr auto auto; gap: 8px; }
+  .carrier-stat-bar-wrap { display: none; }
+  .carrier-stat-days { font-size: 12px; }
+  .carrier-stat-count { font-size: 11px; }
+  .status-breakdown-row { grid-template-columns: 1fr auto; gap: 8px; }
+  .status-bar-wrap { display: none; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .items-row { grid-template-columns: 1fr 50px 80px 64px 28px; gap: 4px; }
   .items-total { grid-template-columns: 1fr 50px 80px 64px 28px; gap: 4px; }
 
