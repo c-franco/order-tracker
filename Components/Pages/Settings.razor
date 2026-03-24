@@ -17,6 +17,22 @@
 
 <div class="settings-container">
 
+    <!-- Datos -->
+    <div class="settings-section">
+        <div class="settings-section-header">
+            <div>
+                <h2 class="settings-section-title">Datos</h2>
+                <p class="settings-section-desc">Exporta todos tus pedidos a CSV o importa pedidos desde un archivo CSV exportado previamente.</p>
+            </div>
+        </div>
+        <div class="data-actions">
+            <button class="btn btn-secondary" @onclick="ExportCsv" disabled="@exporting">
+                @(exporting ? "Exportando..." : "↓ Exportar CSV")
+            </button>
+            <button class="btn btn-secondary" @onclick="() => showImportModal = true">↑ Importar CSV</button>
+        </div>
+    </div>
+
     <!-- Transportistas: acordeón -->
     <div class="settings-section">
         <div class="accordion-header" @onclick="() => carriersOpen = !carriersOpen">
@@ -119,21 +135,6 @@
         }
     </div>
 
-    <!-- Datos -->
-    <div class="settings-section">
-        <div class="settings-section-header">
-            <div>
-                <h2 class="settings-section-title">Datos</h2>
-                <p class="settings-section-desc">Exporta todos tus pedidos a CSV o importa pedidos desde un archivo CSV exportado previamente.</p>
-            </div>
-        </div>
-        <div class="data-actions">
-            <button class="btn btn-secondary" @onclick="ExportCsv" disabled="@exporting">
-                @(exporting ? "Exportando..." : "↓ Exportar CSV")
-            </button>
-            <button class="btn btn-secondary" @onclick="() => showImportModal = true">↑ Importar CSV</button>
-        </div>
-    </div>
 
 </div>
 

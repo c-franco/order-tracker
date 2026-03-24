@@ -1,4 +1,5 @@
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject NavigationManager Nav
 
 <div class="hamburger-wrap">
     <button class="hamburger" @onclick="Toggle" aria-label="Abrir menú">
@@ -19,10 +20,10 @@
         <span class="brand-text">OrderTracker</span>
     </div>
     <ul class="sidebar-nav">
-        <li><a href="/" class="nav-link" @onclick="Close"><span class="nav-icon">◈</span><span class="nav-text"> Dashboard</span></a></li>
-        <li><a href="/orders" class="nav-link" @onclick="Close"><span class="nav-icon">≡</span><span class="nav-text"> Pedidos</span></a></li>
-        <li><a href="/statistics" class="nav-link" @onclick="Close"><span class="nav-icon">◎</span><span class="nav-text"> Estadísticas</span></a></li>
-        <li><a href="/settings" class="nav-link" @onclick="Close"><span class="nav-icon">⚙</span><span class="nav-text"> Ajustes</span></a></li>
+        <li><a href="/" class="nav-link @(IsActive("/") ? "active" : "")" @onclick="Close"><span class="nav-icon">◈</span><span class="nav-text"> Dashboard</span></a></li>
+        <li><a href="/orders" class="nav-link @(IsActive("/orders") ? "active" : "")" @onclick="Close"><span class="nav-icon">≡</span><span class="nav-text"> Pedidos</span></a></li>
+        <li><a href="/statistics" class="nav-link @(IsActive("/statistics") ? "active" : "")" @onclick="Close"><span class="nav-icon">◎</span><span class="nav-text"> Estadísticas</span></a></li>
+        <li><a href="/settings" class="nav-link @(IsActive("/settings") ? "active" : "")" @onclick="Close"><span class="nav-icon">⚙</span><span class="nav-text"> Ajustes</span></a></li>
     </ul>
     <div class="sidebar-footer">
         <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
@@ -35,4 +36,11 @@
     private bool IsOpen = false;
     private void Toggle() => IsOpen = !IsOpen;
     private void Close() => IsOpen = false;
+
+    private bool IsActive(string path)
+    {
+        var current = "/" + Nav.ToBaseRelativePath(Nav.Uri);
+        if (path == "/") return current == "/";
+        return current.StartsWith(path, StringComparison.OrdinalIgnoreCase);
+    }
 }
