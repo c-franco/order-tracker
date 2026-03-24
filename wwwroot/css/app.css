@@ -1319,6 +1319,7 @@ a:hover { color: var(--accent-hover); }
     font-size: 12px;
     font-weight: 500;
     margin-right: auto;
+    padding: 0 8px;
 }
 
 .inline-save-msg.save-success { color: var(--success); }

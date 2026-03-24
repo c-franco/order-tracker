@@ -33,6 +33,42 @@
         </div>
     </div>
 
+    <!-- Métodos de pago: chips, siempre visible -->
+    <div class="settings-section">
+        <div class="settings-section-header">
+            <div>
+                <h2 class="settings-section-title">Métodos de pago</h2>
+            </div>
+        </div>
+        @if (loadingPm)
+        {
+            <div class="loading-state">Cargando...</div>
+        }
+        else
+        {
+            <div class="chips-wrap">
+                @foreach (var pm in paymentMethods.ToList())
+                {
+                    <div class="chip">
+                        <input class="chip-input" @bind="pm.Name" placeholder="Método de pago" />
+                        <button class="chip-remove" @onclick="() => paymentMethods.Remove(pm)" title="Eliminar">✕</button>
+                    </div>
+                }
+                <button class="chip chip-add" @onclick="AddPaymentMethod">+ Añadir</button>
+            </div>
+
+            <div class="accordion-footer">
+                @if (!string.IsNullOrEmpty(savePmMessage))
+                {
+                    <span class="inline-save-msg @(savePmError ? "save-error" : "save-success")">@savePmMessage</span>
+                }
+                <button class="btn btn-primary btn-sm" @onclick="SavePaymentMethods" disabled="@savingPm">
+                    @(savingPm ? "Guardando..." : "Guardar")
+                </button>
+            </div>
+        }
+    </div>
+
     <!-- Transportistas: acordeón -->
     <div class="settings-section">
         <div class="accordion-header" @onclick="() => carriersOpen = !carriersOpen">
@@ -90,51 +126,6 @@
             </div>
         }
     </div>
-
-    <!-- Métodos de pago: chips -->
-    <div class="settings-section">
-        <div class="accordion-header" @onclick="() => pmOpen = !pmOpen">
-            <div class="accordion-title-wrap">
-                <h2 class="settings-section-title">Métodos de pago</h2>
-                <span class="accordion-count">@paymentMethods.Count</span>
-            </div>
-            <span class="accordion-arrow @(pmOpen ? "open" : "")">›</span>
-        </div>
-
-        @if (pmOpen)
-        {
-            <div class="accordion-body">
-                @if (loadingPm)
-                {
-                    <div class="loading-state">Cargando...</div>
-                }
-                else
-                {
-                    <div class="chips-wrap">
-                        @foreach (var pm in paymentMethods.ToList())
-                        {
-                            <div class="chip">
-                                <input class="chip-input" @bind="pm.Name" placeholder="Método de pago" />
-                                <button class="chip-remove" @onclick="() => paymentMethods.Remove(pm)" title="Eliminar">✕</button>
-                            </div>
-                        }
-                        <button class="chip chip-add" @onclick="AddPaymentMethod">+ Añadir</button>
-                    </div>
-
-                    <div class="accordion-footer">
-                        @if (!string.IsNullOrEmpty(savePmMessage))
-                        {
-                            <span class="inline-save-msg @(savePmError ? "save-error" : "save-success")">@savePmMessage</span>
-                        }
-                        <button class="btn btn-primary btn-sm" @onclick="SavePaymentMethods" disabled="@savingPm">
-                            @(savingPm ? "Guardando..." : "Guardar")
-                        </button>
-                    </div>
-                }
-            </div>
-        }
-    </div>
-
 
 </div>
 
@@ -198,7 +189,6 @@
     private List<Carrier> carriers = new();
     private List<OrderTracker.Models.PaymentMethod> paymentMethods = new();
     private bool carriersOpen = false;
-    private bool pmOpen = false;
     private bool loading = true;
     private bool saving = false;
     private string saveMessage = "";
