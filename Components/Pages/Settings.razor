@@ -16,114 +16,110 @@
 </div>
 
 <div class="settings-container">
+
+    <!-- Transportistas: acordeón -->
     <div class="settings-section">
-        <div class="settings-section-header">
-            <div>
+        <div class="accordion-header" @onclick="() => carriersOpen = !carriersOpen">
+            <div class="accordion-title-wrap">
                 <h2 class="settings-section-title">Transportistas</h2>
-                <p class="settings-section-desc">Gestiona la lista de empresas de reparto y sus URLs de seguimiento.</p>
+                <span class="accordion-count">@carriers.Count</span>
             </div>
-            <button class="btn btn-secondary" @onclick="AddCarrier">+ Añadir transportista</button>
+            <span class="accordion-arrow @(carriersOpen ? "open" : "")">›</span>
         </div>
 
-        @if (loading)
+        @if (carriersOpen)
         {
-            <div class="loading-state">Cargando transportistas...</div>
-        }
-        else
-        {
-            <div class="carriers-table-wrap">
-                <table class="carriers-table">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>URL de seguimiento <span class="th-hint">usa {0} como placeholder del código</span></th>
-                            <th>Orden</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var carrier in carriers)
+            <div class="accordion-body">
+                @if (loading)
+                {
+                    <div class="loading-state">Cargando...</div>
+                }
+                else
+                {
+                    <div class="carriers-table-wrap">
+                        <table class="carriers-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>URL de seguimiento <span class="th-hint">usa {0} como placeholder</span></th>
+                                    <th>Orden</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var carrier in carriers)
+                                {
+                                    <tr>
+                                        <td><input class="form-input" @bind="carrier.Name" placeholder="Nombre" /></td>
+                                        <td><input class="form-input" @bind="carrier.TrackingUrlTemplate" placeholder="https://ejemplo.com/tracking/{0}" /></td>
+                                        <td><input class="form-input form-input-xs" type="number" min="0" @bind="carrier.SortOrder" /></td>
+                                        <td><button class="btn-icon btn-delete" @onclick="() => RemoveCarrier(carrier)" title="Eliminar">✕</button></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="accordion-footer">
+                        <button class="btn btn-secondary btn-sm" @onclick="AddCarrier">+ Añadir</button>
+                        @if (!string.IsNullOrEmpty(saveMessage))
                         {
-                            <tr>
-                                <td>
-                                    <input class="form-input" @bind="carrier.Name" placeholder="Nombre del transportista" />
-                                </td>
-                                <td>
-                                    <input class="form-input" @bind="carrier.TrackingUrlTemplate" placeholder="https://ejemplo.com/tracking/{0}" />
-                                </td>
-                                <td>
-                                    <input class="form-input form-input-xs" type="number" min="0" @bind="carrier.SortOrder" />
-                                </td>
-                                <td>
-                                    <button class="btn-icon btn-delete" @onclick="() => RemoveCarrier(carrier)" title="Eliminar">✕</button>
-                                </td>
-                            </tr>
+                            <span class="inline-save-msg @(saveError ? "save-error" : "save-success")">@saveMessage</span>
                         }
-                    </tbody>
-                </table>
-            </div>
-
-            @if (!string.IsNullOrEmpty(saveMessage))
-            {
-                <div class="save-message @(saveError ? "save-error" : "save-success")">@saveMessage</div>
-            }
-
-            <div class="settings-actions">
-                <button class="btn btn-primary" @onclick="Save" disabled="@saving">
-                    @(saving ? "Guardando..." : "Guardar cambios")
-                </button>
+                        <button class="btn btn-primary btn-sm" @onclick="Save" disabled="@saving">
+                            @(saving ? "Guardando..." : "Guardar")
+                        </button>
+                    </div>
+                }
             </div>
         }
     </div>
+
+    <!-- Métodos de pago: chips -->
     <div class="settings-section">
-        <div class="settings-section-header">
-            <div>
+        <div class="accordion-header" @onclick="() => pmOpen = !pmOpen">
+            <div class="accordion-title-wrap">
                 <h2 class="settings-section-title">Métodos de pago</h2>
-                <p class="settings-section-desc">Gestiona las opciones de método de pago disponibles en los pedidos.</p>
+                <span class="accordion-count">@paymentMethods.Count</span>
             </div>
-            <button class="btn btn-secondary" @onclick="AddPaymentMethod">+ Añadir método</button>
+            <span class="accordion-arrow @(pmOpen ? "open" : "")">›</span>
         </div>
 
-        @if (loadingPm)
+        @if (pmOpen)
         {
-            <div class="loading-state">Cargando métodos de pago...</div>
-        }
-        else
-        {
-            <div class="carriers-table-wrap">
-                <table class="carriers-table">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Orden</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var pm in paymentMethods)
+            <div class="accordion-body">
+                @if (loadingPm)
+                {
+                    <div class="loading-state">Cargando...</div>
+                }
+                else
+                {
+                    <div class="chips-wrap">
+                        @foreach (var pm in paymentMethods.ToList())
                         {
-                            <tr>
-                                <td><input class="form-input" @bind="pm.Name" placeholder="Nombre del método" /></td>
-                                <td><input class="form-input form-input-xs" type="number" min="0" @bind="pm.SortOrder" /></td>
-                                <td><button class="btn-icon btn-delete" @onclick="() => paymentMethods.Remove(pm)" title="Eliminar">✕</button></td>
-                            </tr>
+                            <div class="chip">
+                                <input class="chip-input" @bind="pm.Name" placeholder="Método de pago" />
+                                <button class="chip-remove" @onclick="() => paymentMethods.Remove(pm)" title="Eliminar">✕</button>
+                            </div>
                         }
-                    </tbody>
-                </table>
-            </div>
+                        <button class="chip chip-add" @onclick="AddPaymentMethod">+ Añadir</button>
+                    </div>
 
-            @if (!string.IsNullOrEmpty(savePmMessage))
-            {
-                <div class="save-message @(savePmError ? "save-error" : "save-success")">@savePmMessage</div>
-            }
-
-            <div class="settings-actions">
-                <button class="btn btn-primary" @onclick="SavePaymentMethods" disabled="@savingPm">
-                    @(savingPm ? "Guardando..." : "Guardar cambios")
-                </button>
+                    <div class="accordion-footer">
+                        @if (!string.IsNullOrEmpty(savePmMessage))
+                        {
+                            <span class="inline-save-msg @(savePmError ? "save-error" : "save-success")">@savePmMessage</span>
+                        }
+                        <button class="btn btn-primary btn-sm" @onclick="SavePaymentMethods" disabled="@savingPm">
+                            @(savingPm ? "Guardando..." : "Guardar")
+                        </button>
+                    </div>
+                }
             </div>
         }
     </div>
+
+    <!-- Datos -->
     <div class="settings-section">
         <div class="settings-section-header">
             <div>
@@ -138,6 +134,7 @@
             <button class="btn btn-secondary" @onclick="() => showImportModal = true">↑ Importar CSV</button>
         </div>
     </div>
+
 </div>
 
 @if (showImportModal)
@@ -199,19 +196,21 @@
 @code {
     private List<Carrier> carriers = new();
     private List<OrderTracker.Models.PaymentMethod> paymentMethods = new();
+    private bool carriersOpen = false;
+    private bool pmOpen = false;
+    private bool loading = true;
+    private bool saving = false;
+    private string saveMessage = "";
+    private bool saveError = false;
     private bool loadingPm = true;
     private bool savingPm = false;
     private string savePmMessage = "";
     private bool savePmError = false;
-    private bool loading = true;
     private bool exporting = false;
     private bool showImportModal = false;
     private bool importing = false;
     private string importError = "";
     private (int imported, int skipped, List<string> errors)? importResult = null;
-    private bool saving = false;
-    private string saveMessage = "";
-    private bool saveError = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -221,22 +220,30 @@
         loadingPm = false;
     }
 
-    private void AddCarrier()
-    {
+    private void AddCarrier() =>
         carriers.Add(new Carrier { SortOrder = carriers.Count > 0 ? carriers.Max(c => c.SortOrder) + 1 : 1 });
-    }
 
-    private void RemoveCarrier(Carrier carrier)
-    {
-        carriers.Remove(carrier);
-    }
+    private void RemoveCarrier(Carrier carrier) => carriers.Remove(carrier);
 
-    private void AddPaymentMethod()
-    {
+    private void AddPaymentMethod() =>
         paymentMethods.Add(new OrderTracker.Models.PaymentMethod
         {
             SortOrder = paymentMethods.Count > 0 ? paymentMethods.Max(p => p.SortOrder) + 1 : 1
         });
+
+    private async Task Save()
+    {
+        saving = true;
+        saveMessage = "";
+        try
+        {
+            await CarrierSvc.SaveAllAsync(carriers);
+            saveMessage = "✓ Guardado";
+            saveError = false;
+            carriers = await CarrierSvc.GetAllAsync();
+        }
+        catch (Exception ex) { saveMessage = $"Error: {ex.Message}"; saveError = true; }
+        saving = false;
     }
 
     private async Task SavePaymentMethods()
@@ -246,37 +253,12 @@
         try
         {
             await PaymentMethodSvc.SaveAllAsync(paymentMethods);
-            savePmMessage = "✓ Cambios guardados correctamente.";
+            savePmMessage = "✓ Guardado";
             savePmError = false;
             paymentMethods = await PaymentMethodSvc.GetAllAsync();
         }
-        catch (Exception ex)
-        {
-            savePmMessage = $"Error al guardar: {ex.Message}";
-            savePmError = true;
-        }
+        catch (Exception ex) { savePmMessage = $"Error: {ex.Message}"; savePmError = true; }
         savingPm = false;
-    }
-
-    private async Task Save()
-    {
-        saving = true;
-        saveMessage = "";
-
-        try
-        {
-            await CarrierSvc.SaveAllAsync(carriers);
-            saveMessage = "✓ Cambios guardados correctamente.";
-            saveError = false;
-            carriers = await CarrierSvc.GetAllAsync();
-        }
-        catch (Exception ex)
-        {
-            saveMessage = $"Error al guardar: {ex.Message}";
-            saveError = true;
-        }
-
-        saving = false;
     }
 
     private async Task ExportCsv()
@@ -295,7 +277,6 @@
         importError = "";
         importing = true;
         importResult = null;
-
         try
         {
             using var stream = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
@@ -305,11 +286,7 @@
             var pmList = await PaymentMethodSvc.GetAllAsync();
             importResult = await OrderSvc.ImportFromCsvAsync(csv, carrierList, pmList);
         }
-        catch (Exception ex)
-        {
-            importError = "Error al leer el archivo: " + ex.Message;
-        }
-
+        catch (Exception ex) { importError = "Error al leer el archivo: " + ex.Message; }
         importing = false;
     }
 }

@@ -1264,3 +1264,122 @@ a:hover { color: var(--accent-hover); }
 }
 
 .import-error-line { font-size: 12px; color: var(--danger); }
+
+/* ── Accordion ── */
+.accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    padding: 4px 0;
+    user-select: none;
+}
+
+.accordion-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.accordion-count {
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 10px;
+    padding: 1px 8px;
+}
+
+.accordion-arrow {
+    font-size: 18px;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+    display: inline-block;
+    transform: rotate(0deg);
+}
+
+.accordion-arrow.open {
+    transform: rotate(90deg);
+}
+
+.accordion-body {
+    margin-top: 16px;
+}
+
+.accordion-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    justify-content: flex-end;
+}
+
+.inline-save-msg {
+    font-size: 12px;
+    font-weight: 500;
+    margin-right: auto;
+}
+
+.inline-save-msg.save-success { color: var(--success); }
+.inline-save-msg.save-error { color: var(--danger); }
+
+/* ── Chips ── */
+.chips-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px 4px 12px;
+    transition: border-color 0.15s;
+}
+
+.chip:hover { border-color: var(--border-light); }
+
+.chip-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-family: var(--sans);
+    font-size: 13px;
+    width: auto;
+    min-width: 80px;
+    max-width: 160px;
+}
+
+.chip-remove {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.15s;
+}
+
+.chip-remove:hover { color: var(--danger); }
+
+.chip-add {
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: var(--sans);
+    border-radius: 20px;
+    padding: 4px 14px;
+    transition: all 0.15s;
+}
+
+.chip-add:hover { border-color: var(--accent); color: var(--accent); }
