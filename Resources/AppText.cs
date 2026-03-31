@@ -149,6 +149,11 @@ public static class AppText
 
     public static string CsvNoDataMessage => "El archivo CSV no contiene datos.";
     public static string CsvUnknownCarrier => "Desconocido";
+    public static string CsvPaymentMethodsSectionLine => "[MetodosPago]";
+    public static string CsvPaymentMethodsHeaderLine => "Nombre,Orden";
+    public static string CsvCarriersSectionLine => "[Transportistas]";
+    public static string CsvCarriersHeaderLine => "Nombre,UrlSeguimiento,Orden";
+    public static string CsvOrdersSectionLine => "[Pedidos]";
     public static string CsvHeaderLine => "Tienda,FechaCompra,Transportista,CodigoEnvio,UrlSeguimiento,Estado,EntregaEstimada,FechaRecepcion,Total,MetodoPago,Notas,Productos";
 
     public static string ValidationOrderStoreRequired => "La tienda es obligatoria";

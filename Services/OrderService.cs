@@ -170,6 +170,17 @@ public class OrderService
 
     public async Task<string> ExportToCsvAsync()
     {
+        var paymentMethods = await _db.PaymentMethods
+            .OrderBy(p => p.SortOrder)
+            .ThenBy(p => p.Name)
+            .ToListAsync();
+
+        var carriers = await _db.Carriers
+            .Where(c => c.IsActive)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Name)
+            .ToListAsync();
+
         var orders = await _db.Orders
             .Include(o => o.Carrier)
             .Include(o => o.PaymentMethod)
@@ -179,6 +190,32 @@ public class OrderService
             .ToListAsync();
 
         var sb = new System.Text.StringBuilder();
+        sb.AppendLine(AppText.CsvPaymentMethodsSectionLine);
+        sb.AppendLine(AppText.CsvPaymentMethodsHeaderLine);
+
+        foreach (var paymentMethod in paymentMethods)
+        {
+            sb.AppendLine(string.Join(",",
+                Escape(paymentMethod.Name),
+                paymentMethod.SortOrder.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            ));
+        }
+
+        sb.AppendLine();
+        sb.AppendLine(AppText.CsvCarriersSectionLine);
+        sb.AppendLine(AppText.CsvCarriersHeaderLine);
+
+        foreach (var carrier in carriers)
+        {
+            sb.AppendLine(string.Join(",",
+                Escape(carrier.Name),
+                Escape(carrier.TrackingUrlTemplate ?? string.Empty),
+                carrier.SortOrder.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            ));
+        }
+
+        sb.AppendLine();
+        sb.AppendLine(AppText.CsvOrdersSectionLine);
         sb.AppendLine(AppText.CsvHeaderLine);
 
         foreach (var order in orders)
@@ -208,22 +245,136 @@ public class OrderService
         string csvContent, List<Carrier> carriers, List<OrderTracker.Models.PaymentMethod> paymentMethods)
     {
         var lines = csvContent.Replace("\r\n", "\n").Replace("\r", "\n")
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries).ToList();
+            .Split('\n')
+            .Select(static line => line.TrimEnd())
+            .ToList();
+        var nonEmptyLines = lines.Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
 
-        if (lines.Count < 2)
+        if (nonEmptyLines.Count == 0)
             return (0, 0, new List<string> { AppText.CsvNoDataMessage });
 
         int imported = 0, skipped = 0;
         var errors = new List<string>();
-        var carrierMap = carriers.ToDictionary(c => c.Name.ToLower(), c => c);
-        var pmMap = paymentMethods.ToDictionary(p => p.Name.ToLower(), p => p.Id);
+        var carrierMap = carriers
+            .Where(c => !string.IsNullOrWhiteSpace(c.Name))
+            .GroupBy(c => NormalizeLookupKey(c.Name))
+            .ToDictionary(g => g.Key, g => g.First());
+        var pmMap = paymentMethods
+            .Where(p => !string.IsNullOrWhiteSpace(p.Name))
+            .GroupBy(p => NormalizeLookupKey(p.Name))
+            .ToDictionary(g => g.Key, g => g.First());
 
-        for (int i = 1; i < lines.Count; i++)
+        if (!nonEmptyLines.Any(IsSectionMarker))
         {
+            return await ImportOrdersSectionAsync(nonEmptyLines, 1, carrierMap, pmMap);
+        }
+
+        var lineNumber = 0;
+        while (lineNumber < lines.Count)
+        {
+            var line = lines[lineNumber];
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                lineNumber++;
+                continue;
+            }
+
+            if (string.Equals(line, AppText.CsvPaymentMethodsSectionLine, StringComparison.OrdinalIgnoreCase))
+            {
+                lineNumber++;
+                if (lineNumber < lines.Count && string.Equals(lines[lineNumber], AppText.CsvPaymentMethodsHeaderLine, StringComparison.OrdinalIgnoreCase))
+                    lineNumber++;
+
+                while (lineNumber < lines.Count && !IsSectionMarker(lines[lineNumber]))
+                {
+                    if (string.IsNullOrWhiteSpace(lines[lineNumber]))
+                    {
+                        lineNumber++;
+                        continue;
+                    }
+
+                    var cols = ParseCsvLine(lines[lineNumber]);
+                    var paymentMethodName = cols.Count > 0 ? cols[0].Trim() : string.Empty;
+                    if (!string.IsNullOrWhiteSpace(paymentMethodName))
+                    {
+                        await EnsurePaymentMethodExistsAsync(paymentMethodName, cols.Count > 1 ? cols[1] : null, pmMap);
+                    }
+
+                    lineNumber++;
+                }
+
+                continue;
+            }
+
+            if (string.Equals(line, AppText.CsvCarriersSectionLine, StringComparison.OrdinalIgnoreCase))
+            {
+                lineNumber++;
+                if (lineNumber < lines.Count && string.Equals(lines[lineNumber], AppText.CsvCarriersHeaderLine, StringComparison.OrdinalIgnoreCase))
+                    lineNumber++;
+
+                while (lineNumber < lines.Count && !IsSectionMarker(lines[lineNumber]))
+                {
+                    if (string.IsNullOrWhiteSpace(lines[lineNumber]))
+                    {
+                        lineNumber++;
+                        continue;
+                    }
+
+                    var cols = ParseCsvLine(lines[lineNumber]);
+                    var carrierName = cols.Count > 0 ? cols[0].Trim() : string.Empty;
+                    if (!string.IsNullOrWhiteSpace(carrierName))
+                    {
+                        var trackingUrlTemplate = cols.Count > 1 ? cols[1] : null;
+                        await EnsureCarrierExistsAsync(carrierName, trackingUrlTemplate, cols.Count > 2 ? cols[2] : null, carrierMap);
+                    }
+
+                    lineNumber++;
+                }
+
+                continue;
+            }
+
+            if (string.Equals(line, AppText.CsvOrdersSectionLine, StringComparison.OrdinalIgnoreCase))
+            {
+                lineNumber++;
+                if (lineNumber < lines.Count && string.Equals(lines[lineNumber], AppText.CsvHeaderLine, StringComparison.OrdinalIgnoreCase))
+                    lineNumber++;
+
+                var ordersResult = await ImportOrdersSectionAsync(lines, lineNumber, carrierMap, pmMap);
+                imported += ordersResult.imported;
+                skipped += ordersResult.skipped;
+                errors.AddRange(ordersResult.errors);
+                break;
+            }
+
+            lineNumber++;
+        }
+
+        return (imported, skipped, errors);
+    }
+
+    private async Task<(int imported, int skipped, List<string> errors)> ImportOrdersSectionAsync(
+        List<string> lines,
+        int startIndex,
+        Dictionary<string, Carrier> carrierMap,
+        Dictionary<string, OrderTracker.Models.PaymentMethod> pmMap)
+    {
+        int imported = 0, skipped = 0;
+        var errors = new List<string>();
+
+        for (int i = startIndex; i < lines.Count; i++)
+        {
+            if (string.IsNullOrWhiteSpace(lines[i]))
+                continue;
+
             try
             {
                 var cols = ParseCsvLine(lines[i]);
-                if (cols.Count < 11) { skipped++; continue; }
+                if (cols.Count < 11)
+                {
+                    skipped++;
+                    continue;
+                }
 
                 var order = new Order
                 {
@@ -245,17 +396,21 @@ public class OrderService
                     UpdatedAt = DateTime.Now
                 };
 
-                var carrierName = cols[2].ToLower();
-                if (!string.IsNullOrWhiteSpace(carrierName) && carrierMap.TryGetValue(carrierName, out var carrier))
+                var carrierName = cols[2].Trim();
+                if (!string.IsNullOrWhiteSpace(carrierName))
                 {
+                    var carrier = await EnsureCarrierExistsAsync(carrierName, null, null, carrierMap);
                     order.CarrierId = carrier.Id;
                     if (string.IsNullOrWhiteSpace(order.TrackingUrl) && !string.IsNullOrWhiteSpace(order.TrackingCode))
-                        order.TrackingUrl = new CarrierService(_db).GetTrackingUrl(carrier, order.TrackingCode);
+                        order.TrackingUrl = _carrierService.GetTrackingUrl(carrier, order.TrackingCode);
                 }
 
-                var pmName = cols[9].ToLower();
-                if (!string.IsNullOrWhiteSpace(pmName) && pmMap.TryGetValue(pmName, out var pmId))
-                    order.PaymentMethodId = pmId;
+                var paymentMethodName = cols[9].Trim();
+                if (!string.IsNullOrWhiteSpace(paymentMethodName))
+                {
+                    var paymentMethod = await EnsurePaymentMethodExistsAsync(paymentMethodName, null, pmMap);
+                    order.PaymentMethodId = paymentMethod.Id;
+                }
 
                 _db.Orders.Add(order);
                 imported++;
@@ -272,6 +427,71 @@ public class OrderService
 
         return (imported, skipped, errors);
     }
+
+    private async Task<Carrier> EnsureCarrierExistsAsync(
+        string name,
+        string? trackingUrlTemplate,
+        string? sortOrderValue,
+        Dictionary<string, Carrier> carrierMap)
+    {
+        var key = NormalizeLookupKey(name);
+        if (carrierMap.TryGetValue(key, out var existing))
+        {
+            if (string.IsNullOrWhiteSpace(existing.TrackingUrlTemplate) && !string.IsNullOrWhiteSpace(trackingUrlTemplate))
+            {
+                existing.TrackingUrlTemplate = trackingUrlTemplate.Trim();
+                await _db.SaveChangesAsync();
+            }
+
+            return existing;
+        }
+
+        var carrier = new Carrier
+        {
+            Name = name.Trim(),
+            TrackingUrlTemplate = string.IsNullOrWhiteSpace(trackingUrlTemplate) ? null : trackingUrlTemplate.Trim(),
+            IsActive = true,
+            SortOrder = ParseSortOrder(sortOrderValue, carrierMap.Values.Select(c => c.SortOrder).DefaultIfEmpty(0).Max() + 1)
+        };
+
+        _db.Carriers.Add(carrier);
+        await _db.SaveChangesAsync();
+        carrierMap[key] = carrier;
+        return carrier;
+    }
+
+    private async Task<OrderTracker.Models.PaymentMethod> EnsurePaymentMethodExistsAsync(
+        string name,
+        string? sortOrderValue,
+        Dictionary<string, OrderTracker.Models.PaymentMethod> pmMap)
+    {
+        var key = NormalizeLookupKey(name);
+        if (pmMap.TryGetValue(key, out var existing))
+            return existing;
+
+        var paymentMethod = new OrderTracker.Models.PaymentMethod
+        {
+            Name = name.Trim(),
+            SortOrder = ParseSortOrder(sortOrderValue, pmMap.Values.Select(p => p.SortOrder).DefaultIfEmpty(0).Max() + 1)
+        };
+
+        _db.PaymentMethods.Add(paymentMethod);
+        await _db.SaveChangesAsync();
+        pmMap[key] = paymentMethod;
+        return paymentMethod;
+    }
+
+    private static bool IsSectionMarker(string line) =>
+        string.Equals(line, AppText.CsvPaymentMethodsSectionLine, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(line, AppText.CsvCarriersSectionLine, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(line, AppText.CsvOrdersSectionLine, StringComparison.OrdinalIgnoreCase);
+
+    private static string NormalizeLookupKey(string value) => value.Trim().ToLowerInvariant();
+
+    private static int ParseSortOrder(string? value, int fallbackValue) =>
+        int.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var sortOrder)
+            ? sortOrder
+            : fallbackValue;
 
     private static void RecalculateTotal(Order order)
     {

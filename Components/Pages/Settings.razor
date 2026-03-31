@@ -281,6 +281,8 @@
             var carrierList = await CarrierSvc.GetAllAsync();
             var pmList = await PaymentMethodSvc.GetAllAsync();
             importResult = await OrderSvc.ImportFromCsvAsync(csv, carrierList, pmList);
+            carriers = await CarrierSvc.GetAllAsync();
+            paymentMethods = await PaymentMethodSvc.GetAllAsync();
         }
         catch (Exception ex)
         {
