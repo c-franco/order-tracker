@@ -7,42 +7,39 @@
 @inject IJSRuntime JS
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
-<PageTitle>📦 Order Tracker — Ajustes</PageTitle>
+<PageTitle>@AppText.PageTitleSettings</PageTitle>
 
 <div class="page-header">
     <div>
-        <h1 class="page-title">Ajustes</h1>
+        <h1 class="page-title">@AppText.SettingsTitle</h1>
     </div>
 </div>
 
 <div class="settings-container">
-
-    <!-- Datos -->
     <div class="settings-section">
         <div class="settings-section-header">
             <div>
-                <h2 class="settings-section-title">Datos</h2>
-                <p class="settings-section-desc">Exporta todos tus pedidos a CSV o importa pedidos desde un archivo CSV exportado previamente.</p>
+                <h2 class="settings-section-title">@AppText.DataSectionTitle</h2>
+                <p class="settings-section-desc">@AppText.DataSectionDescription</p>
             </div>
         </div>
         <div class="data-actions">
             <button class="btn btn-secondary" @onclick="ExportCsv" disabled="@exporting">
-                @(exporting ? "Exportando..." : "↓ Exportar CSV")
+                @(exporting ? AppText.Exporting : AppText.ExportCsvButton)
             </button>
-            <button class="btn btn-secondary" @onclick="() => showImportModal = true">↑ Importar CSV</button>
+            <button class="btn btn-secondary" @onclick="() => showImportModal = true">@AppText.ImportCsvButton</button>
         </div>
     </div>
 
-    <!-- Métodos de pago: chips, siempre visible -->
     <div class="settings-section">
         <div class="settings-section-header">
             <div>
-                <h2 class="settings-section-title">Métodos de pago</h2>
+                <h2 class="settings-section-title">@AppText.PaymentMethodsTitle</h2>
             </div>
         </div>
         @if (loadingPm)
         {
-            <div class="loading-state">Cargando...</div>
+            <div class="loading-state">@AppText.Loading</div>
         }
         else
         {
@@ -50,11 +47,11 @@
                 @foreach (var pm in paymentMethods.ToList())
                 {
                     <div class="chip">
-                        <input class="chip-input" @bind="pm.Name" placeholder="Método de pago" />
-                        <button class="chip-remove" @onclick="() => paymentMethods.Remove(pm)" title="Eliminar">✕</button>
+                        <input class="chip-input" @bind="pm.Name" placeholder="@AppText.PaymentMethodPlaceholder" />
+                        <button class="chip-remove" @onclick="() => paymentMethods.Remove(pm)" title="@AppText.DeleteTitle">@AppText.CloseIcon</button>
                     </div>
                 }
-                <button class="chip chip-add" @onclick="AddPaymentMethod">+ Añadir</button>
+                <button class="chip chip-add" @onclick="AddPaymentMethod">@AppText.AddButton</button>
             </div>
 
             <div class="accordion-footer">
@@ -63,20 +60,19 @@
                     <span class="inline-save-msg @(savePmError ? "save-error" : "save-success")">@savePmMessage</span>
                 }
                 <button class="btn btn-primary btn-sm" @onclick="SavePaymentMethods" disabled="@savingPm">
-                    @(savingPm ? "Guardando..." : "Guardar")
+                    @(savingPm ? AppText.Saving : AppText.SaveButton)
                 </button>
             </div>
         }
     </div>
 
-    <!-- Transportistas: acordeón -->
     <div class="settings-section">
         <div class="accordion-header" @onclick="() => carriersOpen = !carriersOpen">
             <div class="accordion-title-wrap">
-                <h2 class="settings-section-title">Transportistas</h2>
+                <h2 class="settings-section-title">@AppText.CarriersTitle</h2>
                 <span class="accordion-count">@carriers.Count</span>
             </div>
-            <span class="accordion-arrow @(carriersOpen ? "open" : "")">›</span>
+            <span class="accordion-arrow @(carriersOpen ? "open" : string.Empty)">@AppText.NextPageArrow</span>
         </div>
 
         @if (carriersOpen)
@@ -84,7 +80,7 @@
             <div class="accordion-body">
                 @if (loading)
                 {
-                    <div class="loading-state">Cargando...</div>
+                    <div class="loading-state">@AppText.Loading</div>
                 }
                 else
                 {
@@ -92,9 +88,9 @@
                         <table class="carriers-table">
                             <thead>
                                 <tr>
-                                    <th>Nombre</th>
-                                    <th>URL de seguimiento <span class="th-hint">usa {0} como placeholder</span></th>
-                                    <th>Orden</th>
+                                    <th>@AppText.CarrierNameColumn</th>
+                                    <th>@AppText.CarrierTrackingUrlColumn <span class="th-hint">@AppText.CarrierTrackingUrlHint</span></th>
+                                    <th>@AppText.SortOrderColumn</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -102,10 +98,10 @@
                                 @foreach (var carrier in carriers)
                                 {
                                     <tr>
-                                        <td><input class="form-input" @bind="carrier.Name" placeholder="Nombre" /></td>
-                                        <td><input class="form-input" @bind="carrier.TrackingUrlTemplate" placeholder="https://ejemplo.com/tracking/{0}" /></td>
+                                        <td><input class="form-input" @bind="carrier.Name" placeholder="@AppText.CarrierNamePlaceholder" /></td>
+                                        <td><input class="form-input" @bind="carrier.TrackingUrlTemplate" placeholder="@AppText.CarrierTrackingUrlPlaceholder" /></td>
                                         <td><input class="form-input form-input-xs" type="number" min="0" @bind="carrier.SortOrder" /></td>
-                                        <td><button class="btn-icon btn-delete" @onclick="() => RemoveCarrier(carrier)" title="Eliminar">✕</button></td>
+                                        <td><button class="btn-icon btn-delete" @onclick="() => RemoveCarrier(carrier)" title="@AppText.DeleteTitle">@AppText.CloseIcon</button></td>
                                     </tr>
                                 }
                             </tbody>
@@ -113,36 +109,34 @@
                     </div>
 
                     <div class="accordion-footer">
-                        <button class="btn btn-secondary btn-sm" @onclick="AddCarrier">+ Añadir</button>
+                        <button class="btn btn-secondary btn-sm" @onclick="AddCarrier">@AppText.AddButton</button>
                         @if (!string.IsNullOrEmpty(saveMessage))
                         {
                             <span class="inline-save-msg @(saveError ? "save-error" : "save-success")">@saveMessage</span>
                         }
                         <button class="btn btn-primary btn-sm" @onclick="Save" disabled="@saving">
-                            @(saving ? "Guardando..." : "Guardar")
+                            @(saving ? AppText.Saving : AppText.SaveButton)
                         </button>
                     </div>
                 }
             </div>
         }
     </div>
-
 </div>
 
 @if (showImportModal)
 {
-    <div class="modal-overlay" @onclick="() => { showImportModal = false; importResult = null; }">
+    <div class="modal-overlay" @onclick="CloseImportModal">
         <div class="modal-panel modal-sm" @onclick:stopPropagation="true">
             <div class="modal-header">
-                <h2 class="modal-title">Importar CSV</h2>
-                <button class="modal-close" @onclick="() => { showImportModal = false; importResult = null; }">✕</button>
+                <h2 class="modal-title">@AppText.ImportCsvTitle</h2>
+                <button class="modal-close" @onclick="CloseImportModal">@AppText.CloseIcon</button>
             </div>
             <div class="modal-body">
                 @if (importResult == null)
                 {
                     <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 16px;">
-                        Selecciona un archivo CSV exportado previamente desde esta aplicación.
-                        Los pedidos se añadirán sin reemplazar los existentes.
+                        @AppText.ImportCsvDescription
                     </p>
                     <InputFile class="form-input" accept=".csv" OnChange="HandleImportFile" />
                     @if (!string.IsNullOrEmpty(importError))
@@ -151,19 +145,19 @@
                     }
                     @if (importing)
                     {
-                        <div class="loading-state" style="padding: 16px 0;">Importando...</div>
+                        <div class="loading-state" style="padding: 16px 0;">@AppText.Importing</div>
                     }
                 }
                 else
                 {
                     <div class="import-result">
-                        <div class="import-stat @(importResult.Value.imported > 0 ? "import-ok" : "")">
-                            ✓ @importResult.Value.imported pedido@(importResult.Value.imported != 1 ? "s" : "") importado@(importResult.Value.imported != 1 ? "s" : "")
+                        <div class="import-stat @(importResult.Value.imported > 0 ? "import-ok" : string.Empty)">
+                            @AppText.FormatImportedOrders(importResult.Value.imported)
                         </div>
                         @if (importResult.Value.skipped > 0)
                         {
                             <div class="import-stat import-warn">
-                                ⚠ @importResult.Value.skipped fila@(importResult.Value.skipped != 1 ? "s" : "") omitida@(importResult.Value.skipped != 1 ? "s" : "")
+                                @AppText.FormatSkippedRows(importResult.Value.skipped)
                             </div>
                         }
                         @if (importResult.Value.errors.Any())
@@ -179,7 +173,7 @@
                 }
             </div>
             <div class="modal-footer">
-                <button class="btn btn-ghost" @onclick="() => { showImportModal = false; importResult = null; }">Cerrar</button>
+                <button class="btn btn-ghost" @onclick="CloseImportModal">@AppText.CloseButton</button>
             </div>
         </div>
     </div>
@@ -188,20 +182,20 @@
 @code {
     private List<Carrier> carriers = new();
     private List<OrderTracker.Models.PaymentMethod> paymentMethods = new();
-    private bool carriersOpen = false;
+    private bool carriersOpen;
     private bool loading = true;
-    private bool saving = false;
-    private string saveMessage = "";
-    private bool saveError = false;
+    private bool saving;
+    private string saveMessage = string.Empty;
+    private bool saveError;
     private bool loadingPm = true;
-    private bool savingPm = false;
-    private string savePmMessage = "";
-    private bool savePmError = false;
-    private bool exporting = false;
-    private bool showImportModal = false;
-    private bool importing = false;
-    private string importError = "";
-    private (int imported, int skipped, List<string> errors)? importResult = null;
+    private bool savingPm;
+    private string savePmMessage = string.Empty;
+    private bool savePmError;
+    private bool exporting;
+    private bool showImportModal;
+    private bool importing;
+    private string importError = string.Empty;
+    private (int imported, int skipped, List<string> errors)? importResult;
 
     protected override async Task OnInitializedAsync()
     {
@@ -225,30 +219,40 @@
     private async Task Save()
     {
         saving = true;
-        saveMessage = "";
+        saveMessage = string.Empty;
         try
         {
             await CarrierSvc.SaveAllAsync(carriers);
-            saveMessage = "✓ Guardado";
+            saveMessage = AppText.SaveSuccessMessage;
             saveError = false;
             carriers = await CarrierSvc.GetAllAsync();
         }
-        catch (Exception ex) { saveMessage = $"Error: {ex.Message}"; saveError = true; }
+        catch (Exception ex)
+        {
+            saveMessage = AppText.FormatGenericError(ex.Message);
+            saveError = true;
+        }
+
         saving = false;
     }
 
     private async Task SavePaymentMethods()
     {
         savingPm = true;
-        savePmMessage = "";
+        savePmMessage = string.Empty;
         try
         {
             await PaymentMethodSvc.SaveAllAsync(paymentMethods);
-            savePmMessage = "✓ Guardado";
+            savePmMessage = AppText.SaveSuccessMessage;
             savePmError = false;
             paymentMethods = await PaymentMethodSvc.GetAllAsync();
         }
-        catch (Exception ex) { savePmMessage = $"Error: {ex.Message}"; savePmError = true; }
+        catch (Exception ex)
+        {
+            savePmMessage = AppText.FormatGenericError(ex.Message);
+            savePmError = true;
+        }
+
         savingPm = false;
     }
 
@@ -258,16 +262,17 @@
         var csv = await OrderSvc.ExportToCsvAsync();
         var bytes = System.Text.Encoding.UTF8.GetBytes(csv);
         var base64 = Convert.ToBase64String(bytes);
-        var filename = $"pedidos_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+        var filename = AppText.FormatExportFileName(DateTime.Now);
         await JS.InvokeVoidAsync("downloadFile", filename, "text/csv;charset=utf-8;", base64);
         exporting = false;
     }
 
     private async Task HandleImportFile(InputFileChangeEventArgs e)
     {
-        importError = "";
+        importError = string.Empty;
         importing = true;
         importResult = null;
+
         try
         {
             using var stream = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
@@ -277,7 +282,17 @@
             var pmList = await PaymentMethodSvc.GetAllAsync();
             importResult = await OrderSvc.ImportFromCsvAsync(csv, carrierList, pmList);
         }
-        catch (Exception ex) { importError = "Error al leer el archivo: " + ex.Message; }
+        catch (Exception ex)
+        {
+            importError = AppText.FormatReadFileError(ex.Message);
+        }
+
         importing = false;
+    }
+
+    private void CloseImportModal()
+    {
+        showImportModal = false;
+        importResult = null;
     }
 }

@@ -5,17 +5,17 @@
 @inject OrderService OrderSvc
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
-<PageTitle>📦 Order Tracker — Dashboard</PageTitle>
+<PageTitle>@AppText.PageTitleDashboard</PageTitle>
 
 <div class="page-header">
     <div>
-        <h1 class="page-title">Dashboard</h1>
+        <h1 class="page-title">@AppText.DashboardTitle</h1>
     </div>
 </div>
 
 @if (metrics == null)
 {
-    <div class="loading-state">Cargando métricas...</div>
+    <div class="loading-state">@AppText.LoadMetrics</div>
 }
 else
 {
@@ -24,35 +24,35 @@ else
             <div class="metric-icon">🕐</div>
             <div class="metric-info">
                 <span class="metric-value">@metrics.TotalPending</span>
-                <span class="metric-label">Pendientes</span>
+                <span class="metric-label">@AppText.MetricPending</span>
             </div>
         </div>
         <div class="metric-card metric-delivery">
             <div class="metric-icon">🚚</div>
             <div class="metric-info">
                 <span class="metric-value">@metrics.InDelivery</span>
-                <span class="metric-label">En reparto</span>
+                <span class="metric-label">@AppText.MetricInDelivery</span>
             </div>
         </div>
         <div class="metric-card metric-delayed">
             <div class="metric-icon">⚠</div>
             <div class="metric-info">
                 <span class="metric-value">@metrics.Delayed</span>
-                <span class="metric-label">Retrasados</span>
+                <span class="metric-label">@AppText.MetricDelayed</span>
             </div>
         </div>
         <div class="metric-card metric-spent">
-            <div class="metric-icon">€</div>
+            <div class="metric-icon">@AppText.EuroSymbol</div>
             <div class="metric-info">
-                <span class="metric-value">@metrics.TotalSpent.ToString("N2")€</span>
-                <span class="metric-label">Total gastado</span>
+                <span class="metric-value">@AppText.FormatCurrency(metrics.TotalSpent)</span>
+                <span class="metric-label">@AppText.MetricTotalSpent</span>
             </div>
         </div>
     </div>
 
     <div class="dashboard-sections">
         <div class="section-card">
-            <h2 class="section-title">Últimos pedidos</h2>
+            <h2 class="section-title">@AppText.RecentOrdersTitle</h2>
             @if (recentOrders.Any())
             {
                 <div class="orders-preview">
@@ -61,25 +61,25 @@ else
                         <div class="order-preview-row">
                             <div class="order-preview-store">@order.Store</div>
                             <div class="order-preview-date">@order.PurchaseDate.ToString("dd/MM/yyyy")</div>
-                            <span class="status-badge status-@order.Status.ToString().ToLower()">@GetStatusLabel(order.Status)</span>
-                            <div class="order-preview-price">@order.TotalPrice.ToString("N2")€</div>
+                            <span class="status-badge status-@order.Status.ToString().ToLower()">@AppText.GetOrderStatusLabel(order.Status)</span>
+                            <div class="order-preview-price">@AppText.FormatCurrency(order.TotalPrice)</div>
                         </div>
                     }
                 </div>
             }
             else
             {
-                <div class="empty-state-small">No hay pedidos aún. <a href="/orders">Crear el primero →</a></div>
+                <div class="empty-state-small">@AppText.NoOrdersYetMessage <a href="/orders">@AppText.CreateFirstOrderLinkText</a></div>
             }
         </div>
 
         <div class="section-card">
-            <h2 class="section-title">Por estado</h2>
+            <h2 class="section-title">@AppText.ByStatusTitle</h2>
             <div class="status-breakdown">
                 @foreach (var statusGroup in statusBreakdown)
                 {
                     <div class="status-breakdown-row">
-                        <span class="status-badge status-@statusGroup.Key.ToString().ToLower()">@GetStatusLabel(statusGroup.Key)</span>
+                        <span class="status-badge status-@statusGroup.Key.ToString().ToLower()">@AppText.GetOrderStatusLabel(statusGroup.Key)</span>
                         <div class="status-bar-wrap">
                             <div class="status-bar" style="width: @(metrics.TotalOrders > 0 ? (statusGroup.Value * 100 / metrics.TotalOrders) : 0)%"></div>
                         </div>
@@ -105,15 +105,4 @@ else
             .GroupBy(o => o.Status)
             .ToDictionary(g => g.Key, g => g.Count());
     }
-
-    private string GetStatusLabel(OrderStatus status) => status switch
-    {
-        OrderStatus.Comprado => "Comprado",
-        OrderStatus.Enviado => "Enviado",
-        OrderStatus.EnReparto => "En reparto",
-        OrderStatus.Incidencia => "Incidencia",
-        OrderStatus.Recibido => "Recibido",
-        OrderStatus.Cancelado => "Cancelado",
-        _ => status.ToString()
-    };
 }

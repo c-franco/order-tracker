@@ -5,58 +5,56 @@
 @inject OrderService OrderSvc
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
-<PageTitle>📦 Order Tracker — Estadísticas</PageTitle>
+<PageTitle>@AppText.PageTitleStatistics</PageTitle>
 
 <div class="page-header">
     <div>
-        <h1 class="page-title">Estadísticas</h1>
+        <h1 class="page-title">@AppText.StatisticsTitle</h1>
     </div>
 </div>
 
 @if (loading)
 {
-    <div class="loading-state">Cargando estadísticas...</div>
+    <div class="loading-state">@AppText.LoadStatistics</div>
 }
 else
 {
-    <!-- Resumen general -->
     <div class="stats-section">
-        <h2 class="stats-section-title">Resumen general</h2>
+        <h2 class="stats-section-title">@AppText.GeneralSummaryTitle</h2>
         <div class="stats-grid">
             <div class="stat-card">
                 <span class="stat-value">@totalOrders</span>
-                <span class="stat-label">Total pedidos</span>
+                <span class="stat-label">@AppText.TotalOrdersLabel</span>
             </div>
             <div class="stat-card">
-                <span class="stat-value">@totalSpent.ToString("N2")€</span>
-                <span class="stat-label">Total gastado</span>
+                <span class="stat-value">@AppText.FormatCurrency(totalSpent)</span>
+                <span class="stat-label">@AppText.MetricTotalSpent</span>
             </div>
             <div class="stat-card">
-                <span class="stat-value">@avgOrderValue.ToString("N2")€</span>
-                <span class="stat-label">Ticket medio</span>
+                <span class="stat-value">@AppText.FormatCurrency(avgOrderValue)</span>
+                <span class="stat-label">@AppText.AverageTicketLabel</span>
             </div>
             <div class="stat-card">
                 <span class="stat-value">@receivedOrders</span>
-                <span class="stat-label">Pedidos recibidos</span>
+                <span class="stat-label">@AppText.ReceivedOrdersLabel</span>
             </div>
             <div class="stat-card">
                 <span class="stat-value">@cancelledOrders</span>
-                <span class="stat-label">Cancelados</span>
+                <span class="stat-label">@AppText.CancelledOrdersLabel</span>
             </div>
             <div class="stat-card">
-                <span class="stat-value">@(avgDeliveryDays > 0 ? avgDeliveryDays.ToString("N1") + " días" : "—")</span>
-                <span class="stat-label">Entrega media</span>
+                <span class="stat-value">@AppText.FormatAverageDays(avgDeliveryDays)</span>
+                <span class="stat-label">@AppText.AverageDeliveryLabel</span>
             </div>
         </div>
     </div>
 
-    <!-- Tiempo medio por transportista -->
     <div class="stats-section">
-        <h2 class="stats-section-title">Tiempo medio de entrega por transportista</h2>
+        <h2 class="stats-section-title">@AppText.DeliveryTimeByCarrierTitle</h2>
         <div class="section-card">
             @if (!carrierStats.Any())
             {
-                <div class="empty-state-small">Sin datos. Aparecerá cuando haya pedidos recibidos con fecha de recepción.</div>
+                <div class="empty-state-small">@AppText.NoCarrierStatsMessage</div>
             }
             else
             {
@@ -69,8 +67,8 @@ else
                             <div class="carrier-stat-bar-wrap">
                                 <div class="carrier-stat-bar" style="width: @((maxDays > 0 ? (stat.AvgDays / maxDays * 100) : 0).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%"></div>
                             </div>
-                            <span class="carrier-stat-days">@stat.AvgDays.ToString("N1") días</span>
-                            <span class="carrier-stat-count">@stat.OrderCount pedido@(stat.OrderCount != 1 ? "s" : "")</span>
+                            <span class="carrier-stat-days">@AppText.FormatCarrierDays(stat.AvgDays)</span>
+                            <span class="carrier-stat-count">@AppText.FormatOrderCount(stat.OrderCount)</span>
                         </div>
                     }
                 </div>
@@ -78,15 +76,14 @@ else
         </div>
     </div>
 
-    <!-- Por estado -->
     <div class="stats-section">
-        <h2 class="stats-section-title">Pedidos por estado</h2>
+        <h2 class="stats-section-title">@AppText.OrdersByStatusTitle</h2>
         <div class="section-card">
             <div class="status-breakdown">
                 @foreach (var group in statusBreakdown)
                 {
                     <div class="status-breakdown-row">
-                        <span class="status-badge status-@group.Key.ToString().ToLower()">@GetStatusLabel(group.Key)</span>
+                        <span class="status-badge status-@group.Key.ToString().ToLower()">@AppText.GetOrderStatusLabel(group.Key)</span>
                         <div class="status-bar-wrap">
                             <div class="status-bar" style="width: @((totalOrders > 0 ? (group.Value * 100.0 / totalOrders) : 0).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%"></div>
                         </div>
@@ -97,13 +94,12 @@ else
         </div>
     </div>
 
-    <!-- Por tienda -->
     <div class="stats-section">
-        <h2 class="stats-section-title">Pedidos por tienda</h2>
+        <h2 class="stats-section-title">@AppText.OrdersByStoreTitle</h2>
         <div class="section-card">
             @if (!storeStats.Any())
             {
-                <div class="empty-state-small">Sin datos.</div>
+                <div class="empty-state-small">@AppText.NoDataMessage</div>
             }
             else
             {
@@ -115,8 +111,8 @@ else
                             <div class="carrier-stat-bar-wrap">
                                 <div class="carrier-stat-bar" style="width: @((maxStoreCount > 0 ? (store.Value * 100.0 / maxStoreCount) : 0).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%"></div>
                             </div>
-                            <span class="carrier-stat-days">@store.Value pedido@(store.Value != 1 ? "s" : "")</span>
-                            <span class="carrier-stat-count">@storeSpent[store.Key].ToString("N2")€</span>
+                            <span class="carrier-stat-days">@AppText.FormatOrderCount(store.Value)</span>
+                            <span class="carrier-stat-count">@AppText.FormatCurrency(storeSpent[store.Key])</span>
                         </div>
                     }
                 </div>
@@ -125,11 +121,11 @@ else
     </div>
 
     <div class="stats-section">
-        <h2 class="stats-section-title">Pedidos por método de pago</h2>
+        <h2 class="stats-section-title">@AppText.OrdersByPaymentMethodTitle</h2>
         <div class="section-card">
             @if (!paymentStats.Any())
             {
-                <div class="empty-state-small">Sin datos. Aparecerá cuando los pedidos tengan método de pago asignado.</div>
+                <div class="empty-state-small">@AppText.NoPaymentMethodStatsMessage</div>
             }
             else
             {
@@ -141,8 +137,8 @@ else
                             <div class="carrier-stat-bar-wrap">
                                 <div class="carrier-stat-bar" style="width: @((maxPmCount > 0 ? (pm.Value * 100.0 / maxPmCount) : 0).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%"></div>
                             </div>
-                            <span class="carrier-stat-days">@pm.Value pedido@(pm.Value != 1 ? "s" : "")</span>
-                            <span class="carrier-stat-count">@paymentSpent[pm.Key].ToString("N2")€</span>
+                            <span class="carrier-stat-days">@AppText.FormatOrderCount(pm.Value)</span>
+                            <span class="carrier-stat-count">@AppText.FormatCurrency(paymentSpent[pm.Key])</span>
                         </div>
                     }
                 </div>
@@ -200,7 +196,6 @@ else
             .GroupBy(o => o.Store)
             .ToDictionary(g => g.Key, g => g.Sum(o => o.TotalPrice));
 
-        // Ensure all stores have a spent entry
         foreach (var store in storeStats.Keys)
             if (!storeSpent.ContainsKey(store))
                 storeSpent[store] = 0;
@@ -225,15 +220,4 @@ else
 
         loading = false;
     }
-
-    private string GetStatusLabel(OrderStatus status) => status switch
-    {
-        OrderStatus.Comprado => "Comprado",
-        OrderStatus.Enviado => "Enviado",
-        OrderStatus.EnReparto => "En reparto",
-        OrderStatus.Incidencia => "Incidencia",
-        OrderStatus.Recibido => "Recibido",
-        OrderStatus.Cancelado => "Cancelado",
-        _ => status.ToString()
-    };
 }

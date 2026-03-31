@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using OrderTracker.Resources;
 
 namespace OrderTracker.Models;
 
@@ -17,11 +18,11 @@ public class Order
 {
     public int Id { get; set; }
 
-    [Required(ErrorMessage = "La tienda es obligatoria")]
+    [Required(ErrorMessageResourceType = typeof(AppText), ErrorMessageResourceName = nameof(AppText.ValidationOrderStoreRequired))]
     [MaxLength(200)]
     public string Store { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "La fecha de compra es obligatoria")]
+    [Required(ErrorMessageResourceType = typeof(AppText), ErrorMessageResourceName = nameof(AppText.ValidationPurchaseDateRequired))]
     public DateTime PurchaseDate { get; set; } = DateTime.Now;
 
     public int? CarrierId { get; set; }

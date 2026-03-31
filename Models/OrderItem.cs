@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using OrderTracker.Resources;
 
 namespace OrderTracker.Models;
 
@@ -10,15 +11,15 @@ public class OrderItem
     public int OrderId { get; set; }
     public Order Order { get; set; } = null!;
 
-    [Required(ErrorMessage = "El nombre del producto es obligatorio")]
+    [Required(ErrorMessageResourceType = typeof(AppText), ErrorMessageResourceName = nameof(AppText.ValidationProductNameRequired))]
     [MaxLength(300)]
     public string ProductName { get; set; } = string.Empty;
 
-    [Range(1, 9999, ErrorMessage = "La cantidad debe ser mayor que 0")]
+    [Range(1, 9999, ErrorMessageResourceType = typeof(AppText), ErrorMessageResourceName = nameof(AppText.ValidationQuantityRange))]
     public int Quantity { get; set; } = 1;
 
     [Column(TypeName = "decimal(18,2)")]
-    [Range(0.01, 99999.99, ErrorMessage = "El precio debe ser mayor que 0")]
+    [Range(0.01, 99999.99, ErrorMessageResourceType = typeof(AppText), ErrorMessageResourceName = nameof(AppText.ValidationUnitPriceRange))]
     public decimal UnitPrice { get; set; }
 
     [NotMapped]

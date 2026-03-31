@@ -6,9 +6,9 @@
     <main class="main-content">
         <div class="mobile-topbar">
             <div id="hamburger-slot"></div>
-            <span class="mobile-brand">📦 OrderTracker</span>
-            <button class="theme-toggle-mobile" onclick="toggleTheme()" title="Cambiar tema">
-                <span id="theme-icon-mobile">☀</span>
+            <span class="mobile-brand">@($"{AppText.PackageEmoji} {AppText.AppName}")</span>
+            <button class="theme-toggle-mobile" onclick="toggleTheme()" title="@AppText.ChangeThemeTitle">
+                <span id="theme-icon-mobile">@AppText.ThemeIconDark</span>
             </button>
         </div>
 
@@ -24,8 +24,8 @@
         const current = html.getAttribute('data-theme');
         const next = current === 'dark' ? 'light' : 'dark';
         html.setAttribute('data-theme', next);
-        const icon = next === 'dark' ? '☀' : '◑';
-        ['theme-icon','theme-icon-mobile'].forEach(id => {
+        const icon = next === 'dark' ? '@AppText.ThemeIconDark' : '@AppText.ThemeIconLight';
+        ['theme-icon', 'theme-icon-mobile'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.textContent = icon;
         });
@@ -33,13 +33,12 @@
     }
     const saved = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
-    const icon = saved === 'dark' ? '☀' : '◑';
-    ['theme-icon','theme-icon-mobile'].forEach(id => {
+    const icon = saved === 'dark' ? '@AppText.ThemeIconDark' : '@AppText.ThemeIconLight';
+    ['theme-icon', 'theme-icon-mobile'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = icon;
     });
 
-    // Move hamburger button into topbar slot after render
     function moveHamburger() {
         const wrap = document.querySelector('.hamburger-wrap');
         const slot = document.getElementById('hamburger-slot');
@@ -47,8 +46,8 @@
             slot.appendChild(wrap);
         }
     }
+
     document.addEventListener('DOMContentLoaded', moveHamburger);
-    // Also try after Blazor updates
     const obs = new MutationObserver(moveHamburger);
     obs.observe(document.body, { childList: true, subtree: true });
 </script>

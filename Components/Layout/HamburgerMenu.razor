@@ -2,7 +2,7 @@
 @inject NavigationManager Nav
 
 <div class="hamburger-wrap">
-    <button class="hamburger" @onclick="Toggle" aria-label="Abrir menú">
+    <button class="hamburger" @onclick="Toggle" aria-label="@AppText.OpenMenuAriaLabel">
         <span></span>
         <span></span>
         <span></span>
@@ -14,27 +14,29 @@
     <div class="sidebar-overlay" @onclick="Close"></div>
 }
 
-<nav class="sidebar @(IsOpen ? "sidebar-open" : "")">
+<nav class="sidebar @(IsOpen ? "sidebar-open" : string.Empty)">
     <div class="sidebar-brand">
-        <span class="brand-icon">📦</span>
-        <span class="brand-text">OrderTracker</span>
+        <span class="brand-icon">@AppText.PackageEmoji</span>
+        <span class="brand-text">@AppText.AppName</span>
     </div>
     <ul class="sidebar-nav">
-        <li><a href="/" class="nav-link @(IsActive("/") ? "active" : "")" @onclick="Close"><span class="nav-icon">◈</span><span class="nav-text"> Dashboard</span></a></li>
-        <li><a href="/orders" class="nav-link @(IsActive("/orders") ? "active" : "")" @onclick="Close"><span class="nav-icon">≡</span><span class="nav-text"> Pedidos</span></a></li>
-        <li><a href="/statistics" class="nav-link @(IsActive("/statistics") ? "active" : "")" @onclick="Close"><span class="nav-icon">◎</span><span class="nav-text"> Estadísticas</span></a></li>
-        <li><a href="/settings" class="nav-link @(IsActive("/settings") ? "active" : "")" @onclick="Close"><span class="nav-icon">⚙</span><span class="nav-text"> Ajustes</span></a></li>
+        <li><a href="/" class="nav-link @(IsActive("/") ? "active" : string.Empty)" @onclick="Close"><span class="nav-icon">◈</span><span class="nav-text"> @AppText.DashboardTitle</span></a></li>
+        <li><a href="/orders" class="nav-link @(IsActive("/orders") ? "active" : string.Empty)" @onclick="Close"><span class="nav-icon">≡</span><span class="nav-text"> @AppText.OrdersTitle</span></a></li>
+        <li><a href="/statistics" class="nav-link @(IsActive("/statistics") ? "active" : string.Empty)" @onclick="Close"><span class="nav-icon">◎</span><span class="nav-text"> @AppText.StatisticsTitle</span></a></li>
+        <li><a href="/settings" class="nav-link @(IsActive("/settings") ? "active" : string.Empty)" @onclick="Close"><span class="nav-icon">⚙</span><span class="nav-text"> @AppText.SettingsTitle</span></a></li>
     </ul>
     <div class="sidebar-footer">
-        <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
-            <span id="theme-icon">☀</span>
+        <button class="theme-toggle" onclick="toggleTheme()" title="@AppText.ChangeThemeTitle">
+            <span id="theme-icon">@AppText.ThemeIconDark</span>
         </button>
     </div>
 </nav>
 
 @code {
-    private bool IsOpen = false;
+    private bool IsOpen;
+
     private void Toggle() => IsOpen = !IsOpen;
+
     private void Close() => IsOpen = false;
 
     private bool IsActive(string path)

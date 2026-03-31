@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using OrderTracker.Resources;
 
 namespace OrderTracker.Models;
 
@@ -6,7 +7,7 @@ public class Carrier
 {
     public int Id { get; set; }
 
-    [Required(ErrorMessage = "El nombre es obligatorio")]
+    [Required(ErrorMessageResourceType = typeof(AppText), ErrorMessageResourceName = nameof(AppText.ValidationCarrierNameRequired))]
     [MaxLength(100)]
     public string Name { get; set; } = string.Empty;
 
